@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1035252440723",
+    "firebase_url": "https://fmdriver-b092e.firebaseio.com",
+    "project_id": "fmdriver-b092e",
+    "storage_bucket": "fmdriver-b092e.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1035252440723:android:6b246ab584c42e7177f766",
+        "android_client_info": {
+          "package_name": "com.example.fmdriver"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1035252440723-3b3vc36lo8vcvl0p7hear3hi8ut2i9uk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.fmdriver",
+            "certificate_hash": "ae947ce5ff4b780efb49a13190734552113261aa"
+          }
+        },
+        {
+          "client_id": "1035252440723-7btduoldq2qnvikmg7vifsn0254ufkus.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUjTT6kr3dsvDuZBgTPoALnsEqi4d4omk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1035252440723-7btduoldq2qnvikmg7vifsn0254ufkus.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
