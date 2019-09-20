@@ -7,6 +7,7 @@ import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
@@ -31,8 +32,6 @@ import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
-
-import org.androidannotations.annotations.AfterViews;
 
 
 public class FragmentMap extends Fragment implements AppConstants {
@@ -66,8 +65,9 @@ public class FragmentMap extends Fragment implements AppConstants {
         }
     }
 
-    @AfterViews
-    void afterViews() {
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
         updateImgGetLocation();
     }
 
@@ -134,10 +134,10 @@ public class FragmentMap extends Fragment implements AppConstants {
 
                 if (activity.isGetPosition) {
                     activity.isGetPosition = false;
-                    activity.sendRequestLocation(REQUEST_TYPE_STOP);
+                    activity.sendRequestToFcm(FCM_REQUEST_TYPE_GPS_STOP);
                 } else {
                     activity.isGetPosition = true;
-                    activity.sendRequestLocation(REQUEST_TYPE_START);
+                    activity.sendRequestToFcm(FCM_REQUEST_TYPE_GPS_START);
                 }
 
                 updateImgGetLocation();
@@ -188,14 +188,14 @@ public class FragmentMap extends Fragment implements AppConstants {
     public void onResume() {
         super.onResume();
         mMapView.onResume();
-        if (activity.isGetPosition) activity.sendRequestLocation(REQUEST_TYPE_START);
+        if (activity.isGetPosition) activity.sendRequestToFcm(FCM_REQUEST_TYPE_GPS_START);
     }
 
     @Override
     public void onPause() {
         super.onPause();
         mMapView.onPause();
-        activity.sendRequestLocation(REQUEST_TYPE_STOP);
+        activity.sendRequestToFcm(FCM_REQUEST_TYPE_GPS_STOP);
     }
 
     @Override

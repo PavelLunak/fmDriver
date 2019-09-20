@@ -1,19 +1,19 @@
 package com.example.fmdriver.retrofit.requests;
 
-import com.example.fmdriver.retrofit.objects.RequestPositionData;
+import com.example.fmdriver.retrofit.objects.RequestToFcmData;
 
-public class RequestPosition {
+public class RequestToFcm {
 
     private String to;
     private String collapse_key;
     private String priority;
     private int time_to_live;
-    private RequestPositionData data;
+    private RequestToFcmData data;
 
 
-    public RequestPosition() {}
+    public RequestToFcm() {}
 
-    public RequestPosition(String to, RequestPositionData data) {
+    public RequestToFcm(String to, RequestToFcmData data) {
         this.to = to;
         this.collapse_key = "type_a";
         this.priority = "high";
@@ -52,13 +52,5 @@ public class RequestPosition {
 
     public void setTime_to_live(int time_to_live) {
         this.time_to_live = time_to_live;
-    }
-
-    public RequestPositionData getData() {
-        return data;
-    }
-
-    public void setData(RequestPositionData data) {
-        this.data = data;
     }
 }

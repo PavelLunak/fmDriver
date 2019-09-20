@@ -11,6 +11,7 @@ import android.util.Log;
 import com.example.fmdriver.MainActivity;
 import com.example.fmdriver.R;
 import com.example.fmdriver.utils.AppConstants;
+import com.example.fmdriver.utils.AppUtils;
 import com.example.fmdriver.utils.DateTimeUtils;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -21,15 +22,12 @@ import com.google.firebase.iid.InstanceIdResult;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
 
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService implements AppConstants {
-
-    private FusedLocationProviderClient fusedLocationClient;
-    private LocationRequest mLocationRequest = new LocationRequest();
-    private LocationCallback mLocationCallback;
 
     @Override
     public void onNewToken(String s) {
@@ -52,6 +50,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService impleme
         Log.i(TAG, "MyFirebaseMessagingService - onMessageReceived");
 
         if (remoteMessage != null) {
+            /*
             Log.i(TAG, "MessageType: " + remoteMessage.getMessageType());
             Log.i(TAG, "CollapseKey: " + remoteMessage.getCollapseKey());
             Log.i(TAG, "From: " + remoteMessage.getFrom());
@@ -60,11 +59,58 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService impleme
             Log.i(TAG, "Priority: " + remoteMessage.getPriority());
             Log.i(TAG, "SentTime: " + DateTimeUtils.getDateTime(remoteMessage.getSentTime()));
             Log.i(TAG, "Ttl: " + remoteMessage.getTtl() / 60);
+            */
 
-            if (remoteMessage.getData() != null) {
-                if (!remoteMessage.getData().isEmpty()) {
+            Map<String, String> data = remoteMessage.getData();
+
+            if (data != null) {
+                if (!data.isEmpty()) {
+                    ArrayList<String> keys = new ArrayList<>();
                     for (Map.Entry<String, String> entry : remoteMessage.getData().entrySet()) {
+                        keys.add(entry.getKey());
                         Log.i(TAG, "key : " + entry.getKey() + ", value : " + entry.getValue());
+                    }
+
+                    int responseType = 0;
+
+                    if (keys.contains(KEY_RESPONSE_TYPE)) {
+                        try {
+                            responseType = Integer.parseInt(data.get(KEY_RESPONSE_TYPE));
+                        } catch (NumberFormatException e) {
+                            Log.i(TAG, "NumberFormatException: " + e.getMessage());
+                            return;
+                        }
+                    } else {
+                        return;
+                    }
+
+                    Log.i(TAG, "responseType: " + AppUtils.responseTypeToString(responseType));
+
+                    Intent intent;
+
+                    switch (responseType) {
+                        case FCM_RESPONSE_SERVICE_STATUS_STARTED:
+                        case FCM_RESPONSE_SERVICE_STATUS_STOPED:
+                            intent = new Intent(ACTION_SERVICE_STATUS_BROADCAST);
+                            intent.putExtra(KEY_RESPONSE_SERVICE_STATUS, data.get("responseType"));
+                            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+                            break;
+                        case FCM_RESPONSE_TYPE_LOCATION:
+                            showNotification(DateTimeUtils.getDateTime(new Date()));
+                            intent = new Intent(ACTION_LOCATION_BROADCAST);
+                            intent.putExtra(KEY_DATA, remoteMessage);
+                            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+                            break;
+                        case FCM_REQUEST_TYPE_SERVICE_START:
+                            intent = new Intent(ACTION_SERVICE_STARTET_BROADCAST);
+                            intent.putExtra(KEY_MESSAGE, data.get(KEY_MESSAGE));
+                            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+                            break;
+                        case FCM_REQUEST_TYPE_SERVICE_STOP:
+                            intent = new Intent(ACTION_SERVICE_STOPED_BROADCAST);
+                            intent.putExtra(KEY_MESSAGE, data.get(KEY_MESSAGE));
+                            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+                            break;
                     }
                 } else {
                     Log.i(TAG, "remoteMessage.getData().isEmpty()");
@@ -75,12 +121,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService impleme
         } else {
             Log.i(TAG, "remoteMessage == null");
         }
-
-        showNotification(DateTimeUtils.getDateTime(new Date()));
-
-        Intent intent = new Intent(ACTION_LOCATION_BROADCAST);
-        intent.putExtra("data", remoteMessage);
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
     private void showNotification(String message) {
@@ -91,6 +131,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService impleme
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
                 .setSmallIcon(R.drawable.ic_location_black_24dp)
+                .setSound(null)
                 .setContentTitle("fm")
                 .setContentText(message)
                 .setContentIntent(pendingIntent)
