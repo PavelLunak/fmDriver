@@ -71,7 +71,8 @@ public class MainActivity extends AppCompatActivity implements
             btnStartStopService,
             labelGpsStatus,
             labelServiceStatus,
-            labelMessage;
+            labelMessage,
+            labelBattery;
 
     public FragmentManager fragmentManager;
 
@@ -90,7 +91,7 @@ public class MainActivity extends AppCompatActivity implements
     @AfterViews
     void afterViews() {
         fragmentManager = getSupportFragmentManager();
-        //checkServiceStatus();
+        checkServiceStatus();
     }
 
     @Override
@@ -121,11 +122,13 @@ public class MainActivity extends AppCompatActivity implements
         checkingServiceStatusInProgress = false;
 
         if (serviceStatus == FCM_RESPONSE_SERVICE_STATUS_STARTED) {
+            isServiceStarted = true;
             btnStartStopService.setText("Stop service");
             Toast.makeText(MainActivity.this, "Service started", Toast.LENGTH_LONG).show();
             labelServiceStatus.setAlpha(1f);
             labelMessage.setText("Služba běží");
         } else if (serviceStatus == FCM_RESPONSE_SERVICE_STATUS_STOPED) {
+            isServiceStarted = false;
             btnStartStopService.setText("Start service");
             Toast.makeText(MainActivity.this, "Service stoped", Toast.LENGTH_LONG).show();
             labelServiceStatus.setAlpha(0.15f);
@@ -175,10 +178,14 @@ public class MainActivity extends AppCompatActivity implements
 
     public void sendRequestToFcm(int requestType) {
 
+        Log.i(TAG, "sendRequestToFcm()");
+
         RequestToFcmData requestToFcmData = new RequestToFcmData(MainActivity.appPrefs.fcmToken().get(), requestType);
         RequestToFcm requestToFcm = new RequestToFcm(
                 "fFfB73jMSd8:APA91bHLR5xFgmd3wqjYo70x9Ymcq-Ws2yYQGfUYuKdptXFPw759WZF3iYc_wDp_JUHbygOfGaJhWBSfowa-9NLj3fwSGRpVlJAeS66qWc2FgqsZrllBcpq9TIe6SgdZ7YRnglwhpM1I",
                 requestToFcmData);
+
+        Log.i(TAG, requestToFcm.toString());
 
         ApiFcm apiFcm = ControllerFcm.getRetrofitInstance().create(ApiFcm.class);
         Call<ResponseBody> callFcm = apiFcm.sendRequestToFcm(requestToFcm);
@@ -239,13 +246,9 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     public void checkServiceStatus() {
+        Log.i(TAG, "serviceStopedReceiver - checkServiceStatus()");
         checkingServiceStatusInProgress = true;
-        showFrgmentLoad("Zjišťuji stav service", 0, new OnFragmentLoadShowedListener() {
-            @Override
-            public void onFragmentLoadShowed() {
-                sendRequestToFcm(FCM_REQUEST_TYPE_SERVICE_STATUS);
-            }
-        });
+        sendRequestToFcm(FCM_REQUEST_TYPE_SERVICE_STATUS);
     }
 
     @UiThread
@@ -333,7 +336,7 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onReceive(Context context, Intent intent) {
                 if (intent == null) return;
-
+                updateBatteryStatus(intent.getStringExtra(KEY_BATTERY));
                 RemoteMessage remoteMessage = intent.getParcelableExtra(KEY_DATA);
 
                 if (remoteMessage != null) {
@@ -371,8 +374,8 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onReceive(Context context, Intent intent) {
                 Log.i(TAG, "serviceStatusCheckedReceiver - onReceive()");
-
                 if (intent == null) return;
+                updateBatteryStatus(intent.getStringExtra(KEY_BATTERY));
                 String response = intent.getStringExtra(KEY_RESPONSE_SERVICE_STATUS);
                 int status = 0;
 
@@ -396,8 +399,9 @@ public class MainActivity extends AppCompatActivity implements
         serviceStartetReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                labelServiceStatus.setAlpha(ALPHA_VISIBILITY_VISIBLE);
-                labelMessage.setText(intent.getStringExtra(KEY_MESSAGE));
+                Log.i(TAG, "serviceStartetReceiver - onReceive()");
+                if (intent != null) updateBatteryStatus(intent.getStringExtra(KEY_BATTERY));
+                checkServiceStatus();
             }
         };
 
@@ -408,8 +412,9 @@ public class MainActivity extends AppCompatActivity implements
         serviceStopedReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                labelServiceStatus.setAlpha(ALPHA_VISIBILITY_GONE);
-                labelMessage.setText(intent.getStringExtra(KEY_MESSAGE));
+                Log.i(TAG, "serviceStopedReceiver - onReceive()");
+                if (intent != null) updateBatteryStatus(intent.getStringExtra(KEY_BATTERY));
+                checkServiceStatus();
             }
         };
 
@@ -454,6 +459,11 @@ public class MainActivity extends AppCompatActivity implements
         } catch (IllegalArgumentException e) {
             Log.i(TAG, "unregisterServiceStopedReceiver(): " + e.getMessage());
         }
+    }
+
+    private void updateBatteryStatus(String status) {
+        if (status == null) labelBattery.setText("???");
+        else labelBattery.setText("" + status + "%");
     }
 
     private void initStetho() {

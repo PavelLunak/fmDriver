@@ -93,22 +93,26 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService impleme
                         case FCM_RESPONSE_SERVICE_STATUS_STOPED:
                             intent = new Intent(ACTION_SERVICE_STATUS_BROADCAST);
                             intent.putExtra(KEY_RESPONSE_SERVICE_STATUS, data.get("responseType"));
+                            intent.putExtra(KEY_BATTERY, data.get(KEY_BATTERY));
                             LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
                             break;
                         case FCM_RESPONSE_TYPE_LOCATION:
                             showNotification(DateTimeUtils.getDateTime(new Date()));
                             intent = new Intent(ACTION_LOCATION_BROADCAST);
                             intent.putExtra(KEY_DATA, remoteMessage);
+                            intent.putExtra(KEY_BATTERY, data.get(KEY_BATTERY));
                             LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
                             break;
-                        case FCM_REQUEST_TYPE_SERVICE_START:
+                        case FCM_RESPONSE_SERVICE_START:
                             intent = new Intent(ACTION_SERVICE_STARTET_BROADCAST);
                             intent.putExtra(KEY_MESSAGE, data.get(KEY_MESSAGE));
+                            intent.putExtra(KEY_BATTERY, data.get(KEY_BATTERY));
                             LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
                             break;
-                        case FCM_REQUEST_TYPE_SERVICE_STOP:
+                        case FCM_RESPONSE_SERVICE_STOP:
                             intent = new Intent(ACTION_SERVICE_STOPED_BROADCAST);
                             intent.putExtra(KEY_MESSAGE, data.get(KEY_MESSAGE));
+                            intent.putExtra(KEY_BATTERY, data.get(KEY_BATTERY));
                             LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
                             break;
                     }

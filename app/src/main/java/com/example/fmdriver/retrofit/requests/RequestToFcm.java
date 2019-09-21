@@ -22,6 +22,16 @@ public class RequestToFcm {
     }
 
 
+    @Override
+    public String toString() {
+        return new StringBuilder("RequestToFcm: ")
+                .append("\nto: ")
+                .append(to == null ? "null" : to)
+                .append("\ndata: ")
+                .append(data == null ? "null" : data.toString())
+                .toString();
+    }
+
     public String getTo() {
         return to;
     }

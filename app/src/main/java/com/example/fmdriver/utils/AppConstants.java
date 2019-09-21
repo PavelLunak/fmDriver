@@ -25,14 +25,13 @@ public interface AppConstants {
     int FCM_RESPONSE_GPS_START = 15;
     int FCM_RESPONSE_GPS_STOP = 16;
     int FCM_RESPONSE_TYPE_LOCATION = 17;
-    int FCM_RESPONSE_TYPE_MESSAGE = 18;
-    int FCM_RESPONSE_TYPE_MESSAGE_ERROR = 19;
 
     String KEY_RESPONSE_TYPE = "responseType";
     String KEY_RESPONSE_SERVICE_STATUS = "key_service_status";
     String KEY_DATA = "data";
     String KEY_TOKEN_FOR_RESPONSE = "thisFcmToken";
     String KEY_MESSAGE = "message";
+    String KEY_BATTERY = "battery";
 
     String ACTION_SERVICE_STATUS_BROADCAST = "action_service_status";
     String ACTION_LOCATION_BROADCAST = "action_location_receiver";
