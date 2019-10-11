@@ -40,7 +40,8 @@ public class FragmentMap extends Fragment implements AppConstants {
             labelDate,
             labelLat,
             labelLong,
-            labelAccuracy;
+            labelAccuracy,
+            labelSpeed;
 
     ImageView imgZoomPlus, imgZoomMinus, imgGetPosition;
 
@@ -84,12 +85,14 @@ public class FragmentMap extends Fragment implements AppConstants {
 
         imgZoomPlus = (ImageView) rootView.findViewById(R.id.imgZoomPlus);
         imgZoomMinus = (ImageView) rootView.findViewById(R.id.imgZoomMinus);
+        imgGetPosition = (ImageView) rootView.findViewById(R.id.imgGetPosition);
 
         labelMapType = (TextView) rootView.findViewById(R.id.labelMapType);
         labelDate = (TextView) rootView.findViewById(R.id.labelDate);
         labelLat = (TextView) rootView.findViewById(R.id.labelLat);
         labelLong = (TextView) rootView.findViewById(R.id.labelLong);
         labelAccuracy = (TextView) rootView.findViewById(R.id.labelAccuracy);
+        labelSpeed = (TextView) rootView.findViewById(R.id.labelSpeed);
 
         mMapView.onResume();
 
@@ -127,6 +130,7 @@ public class FragmentMap extends Fragment implements AppConstants {
             }
         });
 
+        /*
         imgGetPosition.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -134,15 +138,16 @@ public class FragmentMap extends Fragment implements AppConstants {
 
                 if (activity.isGetPosition) {
                     activity.isGetPosition = false;
-                    activity.sendRequestToFcm(FCM_REQUEST_TYPE_GPS_STOP);
+                    activity.sendRequestToFcm(FCM_REQUEST_TYPE_GPS_STOP, true);
                 } else {
                     activity.isGetPosition = true;
-                    activity.sendRequestToFcm(FCM_REQUEST_TYPE_GPS_START);
+                    activity.sendRequestToFcm(FCM_REQUEST_TYPE_GPS_START, true);
                 }
 
                 updateImgGetLocation();
             }
         });
+        */
 
         labelMapType.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -188,14 +193,14 @@ public class FragmentMap extends Fragment implements AppConstants {
     public void onResume() {
         super.onResume();
         mMapView.onResume();
-        if (activity.isGetPosition) activity.sendRequestToFcm(FCM_REQUEST_TYPE_GPS_START);
+        //if (activity.isGetPosition) activity.sendRequestToFcm(FCM_REQUEST_TYPE_GPS_START, false);
     }
 
     @Override
     public void onPause() {
         super.onPause();
         mMapView.onPause();
-        activity.sendRequestToFcm(FCM_REQUEST_TYPE_GPS_STOP);
+        //activity.sendRequestToFcm(FCM_REQUEST_TYPE_GPS_STOP, false);
     }
 
     @Override
@@ -226,14 +231,16 @@ public class FragmentMap extends Fragment implements AppConstants {
     }
 
     public void updateImgGetLocation() {
-        if (activity.isGetPosition) imgGetPosition.setImageDrawable(activity.getResources().getDrawable(R.drawable.pause));
+        if (activity.isGpsStarted) imgGetPosition.setImageDrawable(activity.getResources().getDrawable(R.drawable.pause));
         else imgGetPosition.setImageDrawable(activity.getResources().getDrawable(R.drawable.play));
     }
 
     public void updateData(NewLocation location) {
-        labelDate.setText(DateTimeUtils.getDateTime(location.getDate()));
-        labelLat.setText("" + location.getLatitude());
-        labelLong.setText("" + location.getLongitude());
+        labelDate.setText("Datum: " + DateTimeUtils.getDateTime(location.getDate()));
+        labelLat.setText("Lat: " + location.getLatitude());
+        labelLong.setText("Long: " + location.getLongitude());
+        labelAccuracy.setText("Přesnost: " + location.getAccuracy() + "m");
+        labelSpeed.setText("Rychlost: " + location.getSpeed() + "Km/h");
     }
 
     public boolean checkLocationPermission() {

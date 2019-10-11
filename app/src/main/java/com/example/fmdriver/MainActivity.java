@@ -5,6 +5,9 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.location.Address;
+import android.location.LocationManager;
+import android.os.CountDownTimer;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.LocalBroadcastManager;
@@ -12,28 +15,46 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.example.fmdriver.customViews.DialogInfo;
+import com.example.fmdriver.customViews.DialogInput;
+import com.example.fmdriver.fragments.FragmentCheckedPositionDetails;
+import com.example.fmdriver.fragments.FragmentCheckedPositionDetails_;
+import com.example.fmdriver.fragments.FragmentCheckedPositions;
+import com.example.fmdriver.fragments.FragmentCheckedPositions_;
 import com.example.fmdriver.fragments.FragmentLoad;
 import com.example.fmdriver.fragments.FragmentLoad_;
 import com.example.fmdriver.fragments.FragmentMap;
+import com.example.fmdriver.fragments.FragmentSaveToDb;
+import com.example.fmdriver.fragments.FragmentSaveToDb_;
 import com.example.fmdriver.fragments.FragmentToken;
 import com.example.fmdriver.fragments.FragmentToken_;
 import com.example.fmdriver.interfaces.AppPrefs_;
+import com.example.fmdriver.listeners.OnAllCheckedPositionsLoadedListener;
+import com.example.fmdriver.listeners.OnAllItemsDeletedListener;
 import com.example.fmdriver.listeners.OnCallCanceledListener;
 import com.example.fmdriver.listeners.OnFragmentLoadClosedListener;
 import com.example.fmdriver.listeners.OnFragmentLoadShowedListener;
+import com.example.fmdriver.listeners.OnInputInsertedListener;
 import com.example.fmdriver.listeners.OnServiceStatusCheckedListener;
 import com.example.fmdriver.objects.NewLocation;
+import com.example.fmdriver.objects.PositionChecked;
+import com.example.fmdriver.retrofit.ApiDatabase;
 import com.example.fmdriver.retrofit.ApiFcm;
+import com.example.fmdriver.retrofit.ControllerDatabase;
 import com.example.fmdriver.retrofit.ControllerFcm;
+import com.example.fmdriver.retrofit.objects.RequestToFcmCall;
 import com.example.fmdriver.retrofit.objects.RequestToFcmData;
 import com.example.fmdriver.retrofit.requests.RequestToFcm;
+import com.example.fmdriver.retrofit.responses.ResponseAllCheckedPositions;
+import com.example.fmdriver.retrofit.responses.ResponseCheckedPosition;
+import com.example.fmdriver.retrofit.responses.ResponseDeletePosition;
 import com.example.fmdriver.utils.Animators;
 import com.example.fmdriver.utils.AppConstants;
 import com.example.fmdriver.utils.AppUtils;
+import com.example.fmdriver.utils.DateTimeUtils;
 import com.facebook.stetho.Stetho;
 import com.google.firebase.messaging.RemoteMessage;
 
@@ -46,6 +67,7 @@ import org.androidannotations.annotations.ViewById;
 import org.androidannotations.annotations.sharedpreferences.Pref;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Map;
 
 import okhttp3.ResponseBody;
@@ -53,13 +75,12 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-import static com.example.fmdriver.utils.AppConstants.animHideFragment;
-import static com.example.fmdriver.utils.AppConstants.animShowFragment;
 
 @EActivity(R.layout.activity_main)
 public class MainActivity extends AppCompatActivity implements
         AppConstants,
-        OnCallCanceledListener, OnServiceStatusCheckedListener {
+        OnCallCanceledListener,
+        OnServiceStatusCheckedListener {
 
     @Pref
     public static AppPrefs_ appPrefs;
@@ -69,29 +90,70 @@ public class MainActivity extends AppCompatActivity implements
             btnToken,
             btnCheckService,
             btnStartStopService,
+            btnSaveToDb,
+            btnShow,
+            btnAlarm,
+            btnCall,
             labelGpsStatus,
             labelServiceStatus,
             labelMessage,
-            labelBattery;
+            labelBattery,
+            labelCountDownService,
+            labelCountDownGps,
+            labelLastGpsUpdatet,
+            labelAddress;
+
+    @ViewById
+    ProgressBar progressService, progressGps;
+
+    public CountDownTimer serviceTimer, gpsTimer, settingsTimer, locationResultTimer;
+
+    @InstanceState
+    boolean isWaitingForResponseFromFcm;
 
     public FragmentManager fragmentManager;
 
     @InstanceState
     public boolean
             isServiceStarted,
-            isGetPosition,
+            isGpsStarted,
             checkingServiceStatusInProgress;
+
+    @InstanceState
+    public static ArrayList<PositionChecked> itemsCheckedPositions;
 
     BroadcastReceiver locacionReceiver;
     BroadcastReceiver serviceStatusCheckedReceiver;
-    BroadcastReceiver serviceStartetReceiver;
-    BroadcastReceiver serviceStopedReceiver;
+    BroadcastReceiver databaseSettingsUpdatedReceiver;
+    BroadcastReceiver databaseSettingsLoadedReceiver;
+    BroadcastReceiver messageReceiver;
+
+    @InstanceState
+    long serviceCountDownCounter = -1;
+
+    @InstanceState
+    long gpsCountDownCounter = -1;
+
+    @InstanceState
+    long settingsCountDownCounter = -1;
+
+    @InstanceState
+    long locationResultCountDownCounter = -1;
 
 
     @AfterViews
     void afterViews() {
         fragmentManager = getSupportFragmentManager();
-        checkServiceStatus();
+        if (!checkingServiceStatusInProgress) checkServiceStatus();
+
+        if (serviceCountDownCounter != -1) {
+            labelCountDownService.setVisibility(View.VISIBLE);
+            progressService.setVisibility(View.VISIBLE);
+        }
+        if (gpsCountDownCounter != -1) {
+            labelCountDownGps.setVisibility(View.VISIBLE);
+            progressGps.setVisibility(View.VISIBLE);
+        }
     }
 
     @Override
@@ -100,9 +162,17 @@ public class MainActivity extends AppCompatActivity implements
         Log.i(TAG, appPrefs.fcmToken().get());
         registerServiceStatusCheckedReceiver();
         registerLocationReceiver();
-        registerServiceStartetReceiver();
-        registerServiceStopedReceiver();
+        registerDatabaseSettingsUpdatedReceiver();
+        registerDatabaseSettingsLoadedReceiver();
+        registerMessageReceiver();
+
+        registerLocationProvidersChangedStatusReceiver();
+
         initStetho();
+
+        if (serviceCountDownCounter != -1) startCountDownServiceConnect();
+        if (gpsCountDownCounter != -1) startCountDownGpsStart();
+        if (locationResultCountDownCounter != -1) startCountDownLocationResult();
     }
 
     @Override
@@ -110,29 +180,53 @@ public class MainActivity extends AppCompatActivity implements
         super.onPause();
         unregisterServiceStatusCheckedReceiver();
         unregisterLocationReceiver();
-        unregisterServiceStartetReceiver();
-        unregisterServiceStopedReceiver();
-        sendRequestToFcm(FCM_REQUEST_TYPE_GPS_STOP);
+        unregisterDatabaseSettingsUpdatedReceiver();
+        unregisterDatabaseSettingsLoadedReceiver();
+        unregisterMessageReceiver();
+
+        unregisterLocationProvidersChangedStatusReceiver();
+
+        stopCountDownServiceConnect();
+        stopCountDownGpsConnect();
+        stopCountDownSettings();
     }
 
     @Override
-    public void onServiceStatusChecked(final int serviceStatus) {
+    public void onBackPressed() {
+        if (AppUtils.isFragmentCurrent("FragmentLoad_", fragmentManager)) return;
+        super.onBackPressed();
+    }
+
+    @Override
+    public void onServiceStatusChecked(final int serviceStatus, final int gpsStatus) {
         Log.i(TAG, "MainActivity - onServiceStatusChecked()");
 
         checkingServiceStatusInProgress = false;
+        //afterServiceStatusChanged(serviceStatus == STARTED);
 
-        if (serviceStatus == FCM_RESPONSE_SERVICE_STATUS_STARTED) {
+        if (serviceStatus == STARTED) {
             isServiceStarted = true;
-            btnStartStopService.setText("Stop service");
-            Toast.makeText(MainActivity.this, "Service started", Toast.LENGTH_LONG).show();
-            labelServiceStatus.setAlpha(1f);
-            labelMessage.setText("Služba běží");
-        } else if (serviceStatus == FCM_RESPONSE_SERVICE_STATUS_STOPED) {
+            btnStartStopService.setText("OFF");
+            labelServiceStatus.setAlpha(ALPHA_VISIBILITY_VISIBLE);
+        } else if (serviceStatus == STOPED) {
             isServiceStarted = false;
-            btnStartStopService.setText("Start service");
-            Toast.makeText(MainActivity.this, "Service stoped", Toast.LENGTH_LONG).show();
-            labelServiceStatus.setAlpha(0.15f);
-            labelMessage.setText("Služba neběží");
+            btnStartStopService.setText("ON");
+            labelServiceStatus.setAlpha(ALPHA_VISIBILITY_GONE);
+        } else {
+            DialogInfo.createDialog(MainActivity.this)
+                    .setTitle("Chyba")
+                    .setMessage("Nepodařilo se zjistit stav service")
+                    .show();
+        }
+
+        if (gpsStatus == STARTED) {
+            isGpsStarted = true;
+            //btnStartStopGps.setText("GPS OFF");
+            labelGpsStatus.setAlpha(ALPHA_VISIBILITY_VISIBLE);
+        } else if (gpsStatus == STOPED) {
+            isGpsStarted = false;
+            //btnStartStopGps.setText("GPS ON");
+            labelGpsStatus.setAlpha(ALPHA_VISIBILITY_GONE);
         } else {
             DialogInfo.createDialog(MainActivity.this)
                     .setTitle("Chyba")
@@ -148,14 +242,22 @@ public class MainActivity extends AppCompatActivity implements
 
     @Click(R.id.btnMap)
     void clickBtnMap() {
+        if (locationResultTimer != null) return;
         Animators.animateButtonClick(btnMap);
+        startCountDownGpsStart();
+        sendRequestToFcm(FCM_REQUEST_TYPE_LOCATION, true, null);
+
+        /*
         if (isGetPosition) {
+            labelGpsStatus.setAlpha(ALPHA_VISIBILITY_GONE);
             isGetPosition = false;
-            sendRequestToFcm(FCM_REQUEST_TYPE_GPS_STOP);
+            sendRequestToFcm(FCM_REQUEST_TYPE_GPS_STOP, false);
         } else {
+            labelGpsStatus.setAlpha(ALPHA_VISIBILITY_VISIBLE);
             isGetPosition = true;
-            sendRequestToFcm(FCM_REQUEST_TYPE_GPS_START);
+            sendRequestToFcm(FCM_REQUEST_TYPE_GPS_START, false);
         }
+        */
     }
 
     @Click(R.id.btnToken)
@@ -166,21 +268,138 @@ public class MainActivity extends AppCompatActivity implements
 
     @Click(R.id.btnCheckService)
     void clickCheckService() {
+        if (serviceTimer != null) return;
         Animators.animateButtonClick(btnCheckService);
-        sendRequestToFcm(FCM_REQUEST_TYPE_SERVICE_STATUS);
+        startCountDownServiceConnect();
+        sendRequestToFcm(FCM_REQUEST_TYPE_SERVICE_STATUS, false, null);
     }
 
     @Click(R.id.btnStartStopService)
     void clickStartStopService() {
+        if (serviceTimer != null) return;
         Animators.animateButtonClick(btnStartStopService);
-        sendRequestToFcm(isServiceStarted ? FCM_REQUEST_TYPE_SERVICE_STOP : FCM_REQUEST_TYPE_SERVICE_START);
+        startCountDownServiceConnect();
+        sendRequestToFcm(isServiceStarted ? FCM_REQUEST_TYPE_SERVICE_STOP : FCM_REQUEST_TYPE_SERVICE_START, true, null);
     }
 
-    public void sendRequestToFcm(int requestType) {
+    @Click(R.id.btnSaveToDb)
+    void clickSaveToDb() {
+        Animators.animateButtonClick(btnSaveToDb);
+        showFragmentSaveToDb();
+    }
+
+    @Click(R.id.btnShow)
+    void clickShowData() {
+        Animators.animateButtonClick(btnShow);
+        getAllCheckedPositions(null);
+    }
+
+    @Click(R.id.btnAlarm)
+    void clickBtnAlarm() {
+        if (gpsTimer != null) return;
+        if (serviceTimer != null) return;
+
+        Animators.animateButtonClick(btnAlarm);
+        sendRequestToFcm(FCM_REQUEST_TYPE_ALARM, false, null);
+    }
+
+    @Click(R.id.btnCall)
+    void clickBtnCall() {
+        if (gpsTimer != null) return;
+        if (serviceTimer != null) return;
+
+        Animators.animateButtonClick(btnCall);
+
+        DialogInput.createDialog(this)
+                .setTitle("Telefon")
+                .setMessage("Telefonní číslo, na které bude zavoláno:")
+                .setInput(appPrefs.lastPhoneNumber().exists() ? appPrefs.lastPhoneNumber().get() : "")
+                .setListenerInput(new OnInputInsertedListener() {
+                    @Override
+                    public void onInputInserted(String input) {
+                        String validatedInput = validatePhoneNumber(input);
+
+                        if (validatedInput == null) {
+                            appPrefs.edit().lastPhoneNumber().put(input).apply();
+                            RequestToFcmCall data = new RequestToFcmCall(appPrefs.fcmToken().get(), FCM_REQUEST_TYPE_CALL, input);
+                            sendRequestToFcm(FCM_REQUEST_TYPE_CALL, true, data);
+                        } else {
+                            DialogInfo.createDialog(MainActivity.this).setTitle("Chyba").setMessage(validatedInput).show();
+                        }
+                    }
+                }).show();
+    }
+
+    public String validatePhoneNumber(String phoneNumber) {
+        if (phoneNumber != null) {
+            if (phoneNumber.length() >= 6) {
+                if (Character.isDigit(phoneNumber.charAt(3))) {
+                    return null;
+                } else {
+                    return "Character.isDigit(phoneNumber.indexOf(3)) == FALSE";
+                }
+            } else {
+                return "phoneNumber.length() >= 6 == FALSE";
+            }
+        } else {
+            return "phoneNumber == null";
+        }
+    }
+
+    @Click(R.id.labelServiceStatus)
+    void clickLabelServiceStatus() {
+        /*
+        if (serviceTimer == null) {
+            labelCountDownService.setVisibility(View.VISIBLE);
+            progressService.setVisibility(View.VISIBLE);
+            startCountDownServiceConnect();
+        } else {
+            serviceTimer.cancel();
+            serviceTimer = null;
+            labelCountDownService.setVisibility(View.GONE);
+            progressService.setVisibility(View.GONE);
+            serviceCountDownCounter = -1;
+        }
+        */
+    }
+
+    @Click(R.id.labelGpsStatus)
+    void clickLabelGpsStatus() {
+        /*
+        if (gpsTimer == null) {
+            labelCountDownGps.setVisibility(View.VISIBLE);
+            progressGps.setVisibility(View.VISIBLE);
+            startCountDownGpsStart();
+        } else {
+            gpsTimer.cancel();
+            gpsTimer = null;
+            labelCountDownGps.setVisibility(View.GONE);
+            progressGps.setVisibility(View.GONE);
+            gpsCountDownCounter = -1;
+        }
+        */
+    }
+
+    public void sendRequestToFcm(int requestType, boolean blockMultiRequest, RequestToFcmData requestToFcmData) {
 
         Log.i(TAG, "sendRequestToFcm()");
 
-        RequestToFcmData requestToFcmData = new RequestToFcmData(MainActivity.appPrefs.fcmToken().get(), requestType);
+        if (blockMultiRequest) {
+            if (isWaitingForResponseFromFcm) {
+                DialogInfo.createDialog(this)
+                        .setMessage("Info")
+                        .setMessage("Čekám na odpověď serveru. Do té doby není možné odesílat další požadavky")
+                        .show();
+                return;
+            }
+        }
+
+        //isWaitingForResponseFromFcm = true;
+
+        if (requestToFcmData == null) {
+            requestToFcmData = new RequestToFcmData(MainActivity.appPrefs.fcmToken().get(), requestType);
+        }
+
         RequestToFcm requestToFcm = new RequestToFcm(
                 "fFfB73jMSd8:APA91bHLR5xFgmd3wqjYo70x9Ymcq-Ws2yYQGfUYuKdptXFPw759WZF3iYc_wDp_JUHbygOfGaJhWBSfowa-9NLj3fwSGRpVlJAeS66qWc2FgqsZrllBcpq9TIe6SgdZ7YRnglwhpM1I",
                 requestToFcmData);
@@ -248,7 +467,8 @@ public class MainActivity extends AppCompatActivity implements
     public void checkServiceStatus() {
         Log.i(TAG, "serviceStopedReceiver - checkServiceStatus()");
         checkingServiceStatusInProgress = true;
-        sendRequestToFcm(FCM_REQUEST_TYPE_SERVICE_STATUS);
+        startCountDownServiceConnect();
+        sendRequestToFcm(FCM_REQUEST_TYPE_SERVICE_STATUS, true, null);
     }
 
     @UiThread
@@ -277,7 +497,8 @@ public class MainActivity extends AppCompatActivity implements
     @UiThread
     public void closeFragmentLoad(OnFragmentLoadClosedListener listener) {
         if (isFragmentLoadShowed()) {
-            if (getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) fragmentManager.popBackStack();
+            if (getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED))
+                fragmentManager.popBackStack();
         }
 
         if (listener != null) listener.onFragmentLoadClosed();
@@ -329,13 +550,260 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
+    public void showFragmentSaveToDb() {
+        FragmentSaveToDb fragmentSaveToDb = (FragmentSaveToDb) fragmentManager.findFragmentByTag("FragmentSaveToDb_");
+
+        if (fragmentSaveToDb == null) {
+            fragmentSaveToDb = FragmentSaveToDb_.builder().build();
+            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+            fragmentTransaction.setCustomAnimations(animShowFragment, animHideFragment, animShowFragment, animHideFragment);
+            fragmentTransaction.add(R.id.container, fragmentSaveToDb, "FragmentSaveToDb_");
+            fragmentTransaction.addToBackStack("FragmentSaveToDb_");
+            fragmentTransaction.commit();
+        } else {
+            int beCount = fragmentManager.getBackStackEntryCount();
+            if (beCount == 0) return;
+            fragmentManager.popBackStack("FragmentSaveToDb_", 0);
+        }
+    }
+
+    public void showCheckedPositions() {
+
+        FragmentCheckedPositions fragmentCheckedPositions = (FragmentCheckedPositions) fragmentManager.findFragmentByTag("FragmentCheckedPositions_");
+
+        if (fragmentCheckedPositions == null) {
+            fragmentCheckedPositions = FragmentCheckedPositions_.builder().items(itemsCheckedPositions).build();
+            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+            fragmentTransaction.setCustomAnimations(animShowFragment, animHideFragment, animShowFragment, animHideFragment);
+            fragmentTransaction.add(R.id.container, fragmentCheckedPositions, "FragmentCheckedPositions_");
+            fragmentTransaction.addToBackStack("FragmentCheckedPositions_");
+            fragmentTransaction.commit();
+        } else {
+            int beCount = fragmentManager.getBackStackEntryCount();
+            if (beCount == 0) return;
+            fragmentManager.popBackStack("FragmentCheckedPositions_", 0);
+            fragmentCheckedPositions.updateFragment(new ArrayList<PositionChecked>(null));
+        }
+    }
+
+    public void showCheckedPositionDetails(PositionChecked positionChecked) {
+        FragmentCheckedPositionDetails fragmentCheckedPositionDetails = (FragmentCheckedPositionDetails) fragmentManager.findFragmentByTag("FragmentCheckedPositionDetails_");
+
+        if (fragmentCheckedPositionDetails == null) {
+            fragmentCheckedPositionDetails = FragmentCheckedPositionDetails_.builder().positionChecked(positionChecked).build();
+            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+            fragmentTransaction.setCustomAnimations(animShowFragment, animHideFragment, animShowFragment, animHideFragment);
+            fragmentTransaction.add(R.id.container, fragmentCheckedPositionDetails, "FragmentCheckedPositionDetails_");
+            fragmentTransaction.addToBackStack("FragmentCheckedPositionDetails_");
+            fragmentTransaction.commit();
+        } else {
+            int beCount = fragmentManager.getBackStackEntryCount();
+            if (beCount == 0) return;
+            fragmentManager.popBackStack("FragmentCheckedPositionDetails_", 0);
+        }
+    }
+
+    private void startCountDownServiceConnect() {
+        if (labelServiceStatus != null) labelServiceStatus.setAlpha(ALPHA_VISIBILITY_GONE);
+        if (labelCountDownService != null) labelCountDownService.setVisibility(View.VISIBLE);
+        if (progressService != null) progressService.setVisibility(View.VISIBLE);
+        //if (btnCheckService != null) btnCheckService.setBackgroundColor(getResources().getColor(R.color.colorBtnDisabled));
+        //if (btnStartStopService != null) btnStartStopService.setBackgroundColor(getResources().getColor(R.color.colorBtnDisabled));
+
+        serviceTimer = new CountDownTimer(serviceCountDownCounter == -1 ? MAX_TIME_FOR_WAITING_FCM_RESPONSE : serviceCountDownCounter, 1000) {
+
+            public void onTick(long millisUntilFinished) {
+                labelCountDownService.setText("" + millisUntilFinished / 1000);
+                serviceCountDownCounter = millisUntilFinished;
+                Log.i("ghghgh", "" + millisUntilFinished / 1000);
+            }
+
+            public void onFinish() {
+                if (labelCountDownService != null)
+                    labelCountDownService.setText("" + (MAX_TIME_FOR_WAITING_FCM_RESPONSE + 1000) / 1000);
+                if (labelCountDownService != null) labelCountDownService.setVisibility(View.GONE);
+                if (progressService != null) progressService.setVisibility(View.GONE);
+                if (btnCheckService != null)
+                    btnCheckService.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
+                if (btnStartStopService != null)
+                    btnStartStopService.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
+                serviceTimer = null;
+                serviceCountDownCounter = -1;
+
+                //sendRequestToFcm(FCM_REQUEST_TYPE_CANCEL, false);
+                isWaitingForResponseFromFcm = false;
+
+                if (isServiceStarted) labelServiceStatus.setAlpha(ALPHA_VISIBILITY_VISIBLE);
+
+                DialogInfo.createDialog(MainActivity.this)
+                        .setTitle("Chyba")
+                        .setMessage("Nepodařilo se doručit zprávu v nastaveném časovém limitu")
+                        .show();
+            }
+        }.start();
+    }
+
+    private void startCountDownGpsStart() {
+        if (labelGpsStatus != null) labelGpsStatus.setAlpha(ALPHA_VISIBILITY_GONE);
+        if (labelCountDownGps != null) labelCountDownGps.setVisibility(View.VISIBLE);
+        if (progressGps != null) progressGps.setVisibility(View.VISIBLE);
+
+        gpsTimer = new CountDownTimer(gpsCountDownCounter == -1 ? MAX_TIME_FOR_WAITING_FCM_RESPONSE_LOCATION_CREATE : gpsCountDownCounter, 1000) {
+
+            public void onTick(long millisUntilFinished) {
+                labelCountDownGps.setText("" + millisUntilFinished / 1000);
+                gpsCountDownCounter = millisUntilFinished;
+            }
+
+            public void onFinish() {
+                gpsTimer = null;
+                gpsCountDownCounter = -1;
+
+                startCountDownLocationResult();
+                sendRequestToFcm(FCM_REQUEST_TYPE_LOCATION_RESULT, true, null);
+            }
+        }.start();
+    }
+
+    public void startCountDownSettings() {
+        final FragmentSaveToDb fragmentSaveToDb = (FragmentSaveToDb) fragmentManager.findFragmentByTag("FragmentSaveToDb_");
+        if (fragmentSaveToDb == null) return;
+        if (!AppUtils.isFragmentCurrent("FragmentSaveToDb_", fragmentManager)) return;
+
+        settingsTimer = new CountDownTimer(settingsCountDownCounter == -1 ? MAX_TIME_FOR_WAITING_FCM_RESPONSE : settingsCountDownCounter, 1000) {
+
+            public void onTick(long millisUntilFinished) {
+                settingsCountDownCounter = millisUntilFinished;
+            }
+
+            public void onFinish() {
+                fragmentSaveToDb.updateViewsAfterSendClick(true);
+                fragmentSaveToDb.updateViewsAfterLoadClick(true);
+                settingsTimer = null;
+                settingsCountDownCounter = -1;
+                isWaitingForResponseFromFcm = false;
+
+                closeFragmentLoad(new OnFragmentLoadClosedListener() {
+                    @Override
+                    public void onFragmentLoadClosed() {
+                        DialogInfo.createDialog(MainActivity.this)
+                                .setTitle("Chyba")
+                                .setMessage("Nepodařilo se odeslat nastavení v nastaveném časovém limitu")
+                                .show();
+                    }
+                });
+            }
+        }.start();
+    }
+
+    public void startCountDownLocationResult() {
+        locationResultTimer = new CountDownTimer(locationResultCountDownCounter == -1 ? MAX_TIME_FOR_WAITING_FCM_RESPONSE : locationResultCountDownCounter, 1000) {
+
+            public void onTick(long millisUntilFinished) {
+                labelCountDownGps.setText("" + millisUntilFinished / 1000);
+                locationResultCountDownCounter = millisUntilFinished;
+            }
+
+            public void onFinish() {
+                if (labelCountDownGps != null) labelCountDownGps.setText("" + (MAX_TIME_FOR_WAITING_FCM_RESPONSE + 1000) / 1000);
+                if (labelCountDownGps != null) labelCountDownGps.setVisibility(View.GONE);
+                if (progressGps != null) progressGps.setVisibility(View.GONE);
+
+                locationResultTimer = null;
+                locationResultCountDownCounter = -1;
+
+                isWaitingForResponseFromFcm = false;
+
+                closeFragmentLoad(new OnFragmentLoadClosedListener() {
+                    @Override
+                    public void onFragmentLoadClosed() {
+                        DialogInfo.createDialog(MainActivity.this)
+                                .setTitle("Chyba")
+                                .setMessage("Nepodařilo se získat polohu v nastaveném časovém limitu")
+                                .show();
+                    }
+                });
+            }
+        }.start();
+    }
+
+    private void stopCountDownServiceConnect() {
+        if (serviceTimer != null) {
+            serviceTimer.cancel();
+            serviceTimer = null;
+        }
+
+        if (labelCountDownService != null) labelCountDownService.setVisibility(View.GONE);
+        if (progressService != null) progressService.setVisibility(View.GONE);
+        if (btnCheckService != null)
+            btnCheckService.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
+        if (btnStartStopService != null)
+            btnStartStopService.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
+
+        serviceCountDownCounter = -1;
+    }
+
+    private void stopCountDownGpsConnect() {
+        if (gpsTimer != null) {
+            gpsTimer.cancel();
+            gpsTimer = null;
+        }
+
+        if (labelCountDownGps != null) labelCountDownGps.setVisibility(View.GONE);
+        if (progressGps != null) progressGps.setVisibility(View.GONE);
+        if (btnMap != null)
+            btnMap.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
+
+        gpsCountDownCounter = -1;
+    }
+
+    public void stopCountDownSettings() {
+        if (settingsTimer != null) {
+            settingsTimer.cancel();
+            settingsTimer = null;
+        }
+
+        final FragmentSaveToDb fragmentSaveToDb = (FragmentSaveToDb) fragmentManager.findFragmentByTag("FragmentSaveToDb_");
+        if (fragmentSaveToDb == null) return;
+        fragmentSaveToDb.updateViewsAfterSendClick(true);
+        fragmentSaveToDb.updateViewsAfterLoadClick(true);
+        settingsCountDownCounter = -1;
+    }
+
+    public void stopCountDownLocationResult() {
+        if (locationResultTimer != null) {
+            locationResultTimer.cancel();
+            locationResultTimer = null;
+        }
+
+        if (labelCountDownGps != null) labelCountDownGps.setVisibility(View.GONE);
+        if (progressGps != null) progressGps.setVisibility(View.GONE);
+        if (btnMap != null) btnMap.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
+        locationResultCountDownCounter = -1;
+    }
+
     private void registerLocationReceiver() {
         Log.i(TAG, "registerLocationReceiver()");
 
         locacionReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
+                Log.i(TAG, "LocacionReceiver() - onReceive()");
+
+                stopCountDownLocationResult();
+
                 if (intent == null) return;
+
+                if (intent.hasExtra(KEY_LOCATION_DISABLED)) {
+                    updateMessage(intent.getStringExtra(KEY_MESSAGE));
+
+                    DialogInfo.createDialog(MainActivity.this)
+                            .setTitle("Info")
+                            .setMessage("Na sledovaném zařízení není povoleno zjišťování polohy")
+                            .show();
+                    return;
+                }
+
                 updateBatteryStatus(intent.getStringExtra(KEY_BATTERY));
                 RemoteMessage remoteMessage = intent.getParcelableExtra(KEY_DATA);
 
@@ -346,22 +814,40 @@ public class MainActivity extends AppCompatActivity implements
                             NewLocation newLocation = new NewLocation();
 
                             try {
-                                if (data.containsKey("date")) newLocation.setAccuracy(Long.parseLong(data.get("date")));
-                                if (data.containsKey("latitude")) newLocation.setLatitude(Double.parseDouble(data.get("latitude")));
-                                if (data.containsKey("longitude")) newLocation.setLongitude(Double.parseDouble(data.get("longitude")));
-                                if (data.containsKey("accuracy")) newLocation.setAccuracy(Float.parseFloat(data.get("accuracy")));
+                                if (data.containsKey("date"))
+                                    newLocation.setDate(Long.parseLong(data.get("date")));
+                                if (data.containsKey("latitude"))
+                                    newLocation.setLatitude(Double.parseDouble(data.get("latitude")));
+                                if (data.containsKey("longitude"))
+                                    newLocation.setLongitude(Double.parseDouble(data.get("longitude")));
+                                if (data.containsKey("speed"))
+                                    newLocation.setSpeed(Float.parseFloat(data.get("accuracy")));
+                                if (data.containsKey("accuracy"))
+                                    newLocation.setAccuracy(Float.parseFloat(data.get("accuracy")));
+                                if (data.containsKey("batteryStatus"))
+                                    newLocation.setAccuracy(Float.parseFloat(data.get("batteryStatus")));
                             } catch (NumberFormatException e) {
                                 e.printStackTrace();
                             }
 
-                            /*
+                            labelLastGpsUpdatet.setText(DateTimeUtils.getDateTime(newLocation.getDate()));
+                            updateAddress(AppUtils.getAddressForLocation(MainActivity.this, newLocation.getLatitude(), newLocation.getLongitude()));
+
+                            Log.i(TAG, "LocacionReceiver() - onReceive() - newLocation:");
+                            Log.i(TAG, newLocation.toString());
+
                             FragmentMap fragmentMap = (FragmentMap) fragmentManager.findFragmentByTag("FragmentMap2");
 
                             if (fragmentMap == null) showFragmentMap2(newLocation, "tady");
                             else fragmentMap.updateMap(newLocation, "tady");
-                            */
+                        } else {
+                            Log.i(TAG, "LocacionReceiver() - onReceive() - data.isEmpty()");
                         }
+                    } else {
+                        Log.i(TAG, "LocacionReceiver() - onReceive() - data == null");
                     }
+                } else {
+                    Log.i(TAG, "LocacionReceiver() - onReceive() - remoteMessage == null");
                 }
             }
         };
@@ -374,51 +860,133 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onReceive(Context context, Intent intent) {
                 Log.i(TAG, "serviceStatusCheckedReceiver - onReceive()");
+
+                isWaitingForResponseFromFcm = false;
+                stopCountDownServiceConnect();
+
                 if (intent == null) return;
                 updateBatteryStatus(intent.getStringExtra(KEY_BATTERY));
-                String response = intent.getStringExtra(KEY_RESPONSE_SERVICE_STATUS);
-                int status = 0;
+                String responseServiceStatus = intent.getStringExtra(KEY_SERVICE_STATUS);
+                String responseGpsStatus = intent.getStringExtra(KEY_GPS_STATUS);
+                updateMessage(intent.getStringExtra(KEY_MESSAGE));
+
+                int serviceStatus = STOPED;
+                int gpsStatus = STOPED;
 
                 try {
-                    status = Integer.parseInt(response);
+                    serviceStatus = Integer.parseInt(responseServiceStatus);
+                    gpsStatus = Integer.parseInt(responseGpsStatus);
                 } catch (NumberFormatException e) {
                     Log.i(TAG, "serviceStatusCheckedReceiver - NumberFormatException: " + e.getMessage());
                     return;
                 }
 
-                Log.i(TAG, "status == " + AppUtils.responseTypeToString(status));
-
-                MainActivity.this.onServiceStatusChecked(status);
+                MainActivity.this.onServiceStatusChecked(serviceStatus, gpsStatus);
             }
         };
 
         LocalBroadcastManager.getInstance(this).registerReceiver(serviceStatusCheckedReceiver, new IntentFilter(ACTION_SERVICE_STATUS_BROADCAST));
     }
 
-    public void registerServiceStartetReceiver() {
-        serviceStartetReceiver = new BroadcastReceiver() {
+    public void registerDatabaseSettingsUpdatedReceiver() {
+        databaseSettingsUpdatedReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                Log.i(TAG, "serviceStartetReceiver - onReceive()");
-                if (intent != null) updateBatteryStatus(intent.getStringExtra(KEY_BATTERY));
-                checkServiceStatus();
+                Log.i(TAG, "databaseSettingsUpdatedReceiver - onReceive()");
+
+                stopCountDownSettings();
+
+                FragmentSaveToDb fragmentSaveToDb = (FragmentSaveToDb) fragmentManager.findFragmentByTag("FragmentSaveToDb_");
+                if (fragmentSaveToDb != null) {
+                    fragmentSaveToDb.updateViewsAfterSendClick(true);
+                    fragmentSaveToDb.updateViewsAfterLoadClick(true);
+                }
+
+                if (intent.getIntExtra(KEY_SAVE_NEW_DB_SETTINGS, -1) == DB_SETTINGS_UPDATED_SUCCESS) {
+                    DialogInfo.createDialog(MainActivity.this)
+                            .setTitle("Info")
+                            .setMessage(intent.getStringExtra(KEY_MESSAGE))
+                            .show();
+                } else if (intent.getIntExtra(KEY_SAVE_NEW_DB_SETTINGS, -1) == DB_SETTINGS_UPDATED_ERROR) {
+                    DialogInfo.createDialog(MainActivity.this)
+                            .setTitle("Info")
+                            .setMessage(intent.getStringExtra(KEY_MESSAGE))
+                            .show();
+                } else {
+                    DialogInfo.createDialog(MainActivity.this)
+                            .setTitle("Info")
+                            .setMessage("Neznámá chyba při ukládání nového nastavení databáze")
+                            .show();
+                }
             }
         };
 
-        LocalBroadcastManager.getInstance(this).registerReceiver(serviceStartetReceiver, new IntentFilter(ACTION_SERVICE_STARTET_BROADCAST));
+        LocalBroadcastManager.getInstance(this).registerReceiver(databaseSettingsUpdatedReceiver, new IntentFilter(ACTION_DATABASE_SETTINGS_UPDATED));
     }
 
-    public void registerServiceStopedReceiver() {
-        serviceStopedReceiver = new BroadcastReceiver() {
+    public void registerDatabaseSettingsLoadedReceiver() {
+        databaseSettingsLoadedReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                Log.i(TAG, "serviceStopedReceiver - onReceive()");
-                if (intent != null) updateBatteryStatus(intent.getStringExtra(KEY_BATTERY));
-                checkServiceStatus();
+                Log.i(TAG, "databaseSettingsLoadedReceiver - onReceive()");
+
+                int savingToDatabaseEnabled = 0;
+                long autoCheckedPositionSavingInterval = -1;
+                int maxCountOfLocationChecked = -1;
+                int timeUnit = TIME_UNIT_SECONDS;
+
+                stopCountDownSettings();
+
+                try {
+                    savingToDatabaseEnabled = Integer.parseInt(intent.getStringExtra(KEY_DB_ENABLED));
+                    autoCheckedPositionSavingInterval = Long.parseLong(intent.getStringExtra(KEY_SAVE_INTERVAL));
+                    maxCountOfLocationChecked = Integer.parseInt(intent.getStringExtra(KEY_MAX_COUNT_LOC_SAVE));
+                    timeUnit = Integer.parseInt(intent.getStringExtra(KEY_TIME_UNIT));
+
+                    appPrefs.edit()
+                            .savingToDatabaseEnabled().put(savingToDatabaseEnabled == 1)
+                            .autoCheckedPositionSavingInterval().put(autoCheckedPositionSavingInterval)
+                            .maxCountOfLocationChecked().put(maxCountOfLocationChecked)
+                            .timeUnit().put(timeUnit)
+                            .apply();
+
+                    FragmentSaveToDb fragmentSaveToDb = (FragmentSaveToDb) fragmentManager.findFragmentByTag("FragmentSaveToDb_");
+                    if (fragmentSaveToDb != null) {
+                        fragmentSaveToDb.afterLoaded();
+                    }
+
+
+                } catch (NullPointerException e) {
+                    DialogInfo.createDialog(MainActivity.this)
+                            .setTitle("Info")
+                            .setMessage("Načítání nastavení : NullPointerException")
+                            .show();
+                } catch (NumberFormatException e) {
+                    DialogInfo.createDialog(MainActivity.this)
+                            .setTitle("Info")
+                            .setMessage("Načítání nastavení : NumberFormatException")
+                            .show();
+                }
             }
         };
 
-        LocalBroadcastManager.getInstance(this).registerReceiver(serviceStopedReceiver, new IntentFilter(ACTION_SERVICE_STOPED_BROADCAST));
+        LocalBroadcastManager.getInstance(this).registerReceiver(databaseSettingsLoadedReceiver, new IntentFilter(ACTION_DATABASE_SETTINGS_LOADED));
+    }
+
+    public void registerMessageReceiver() {
+        messageReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Log.i(TAG, "messageReceiver - onReceive()");
+
+                DialogInfo.createDialog(MainActivity.this)
+                        .setTitle("Info")
+                        .setMessage(intent.getStringExtra(KEY_MESSAGE))
+                        .show();
+            }
+        };
+
+        LocalBroadcastManager.getInstance(this).registerReceiver(messageReceiver, new IntentFilter(ACTION_SHOW_MESSAGE));
     }
 
     private void unregisterLocationReceiver() {
@@ -441,30 +1009,205 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-    private void unregisterServiceStartetReceiver() {
-        Log.i(TAG, "unregisterServiceStartetReceiver()");
+    private void unregisterDatabaseSettingsUpdatedReceiver() {
+        Log.i(TAG, "unregisterDatabaseSettingsUpdatedReceiver()");
 
         try {
-            LocalBroadcastManager.getInstance(this).unregisterReceiver(serviceStartetReceiver);
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(databaseSettingsUpdatedReceiver);
         } catch (IllegalArgumentException e) {
-            Log.i(TAG, "unregisterServiceStartetReceiver(): " + e.getMessage());
+            Log.i(TAG, "unregisterDatabaseSettingsUpdatedReceiver(): " + e.getMessage());
         }
     }
 
-    private void unregisterServiceStopedReceiver() {
-        Log.i(TAG, "unregisterServiceStopedReceiver()");
+    private void unregisterDatabaseSettingsLoadedReceiver() {
+        Log.i(TAG, "unregisterDatabaseSettingsLoadedReceiver()");
 
         try {
-            LocalBroadcastManager.getInstance(this).unregisterReceiver(serviceStopedReceiver);
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(databaseSettingsLoadedReceiver);
         } catch (IllegalArgumentException e) {
-            Log.i(TAG, "unregisterServiceStopedReceiver(): " + e.getMessage());
+            Log.i(TAG, "unregisterDatabaseSettingsLoadedReceiver(): " + e.getMessage());
+        }
+    }
+
+    private void unregisterMessageReceiver() {
+        Log.i(TAG, "unregisterMessageReceiver()");
+
+        try {
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(messageReceiver);
+        } catch (IllegalArgumentException e) {
+            Log.i(TAG, "unregisterMessageReceiver(): " + e.getMessage());
         }
     }
 
     private void updateBatteryStatus(String status) {
         if (status == null) labelBattery.setText("???");
+        if (status.equals("")) labelBattery.setText("???");
+        if (status.equals("0")) labelBattery.setText("???");
         else labelBattery.setText("" + status + "%");
     }
+
+    private void updateMessage(String message) {
+        if (message == null) labelMessage.setText("");
+        else labelMessage.setText(message);
+    }
+
+    private void updateAddress(Address address) {
+        labelAddress.setText(AppUtils.addressToString(address));
+    }
+
+    public void getAllCheckedPositions(final OnAllCheckedPositionsLoadedListener listener) {
+        ApiDatabase api = ControllerDatabase.getRetrofitInstance().create(ApiDatabase.class);
+        final Call<ResponseAllCheckedPositions> call = api.getAllCheckedPositions(1);
+
+        showFrgmentLoad("Stahuji data", 0, new OnFragmentLoadShowedListener() {
+            @Override
+            public void onFragmentLoadShowed() {
+                call.enqueue(new Callback<ResponseAllCheckedPositions>() {
+                    @Override
+                    public void onResponse(Call<ResponseAllCheckedPositions> call, Response<ResponseAllCheckedPositions> response) {
+
+                        if (response.isSuccessful()) {
+                            if (response.body() != null) {
+
+                                ResponseAllCheckedPositions responseAllCheckedPositions = response.body();
+                                MainActivity.itemsCheckedPositions = new ArrayList<PositionChecked>();
+
+                                for (ResponseCheckedPosition rp : responseAllCheckedPositions.getPositions()) {
+                                    MainActivity.itemsCheckedPositions.add(rp.toPositionChecked());
+                                }
+
+                                closeFragmentLoad(new OnFragmentLoadClosedListener() {
+                                    @Override
+                                    public void onFragmentLoadClosed() {
+
+                                        if (listener != null) {
+                                            listener.onAllCheckedPositionsLoaded(MainActivity.itemsCheckedPositions);
+                                        } else {
+                                            showCheckedPositions();
+                                        }
+                                    }
+                                });
+                            } else {
+                                closeFragmentLoad(null);
+
+                                if (listener != null) {
+                                    listener.onAllCheckedPositionsLoaded(MainActivity.itemsCheckedPositions);
+                                } else {
+                                    DialogInfo.createDialog(MainActivity.this).setTitle("Chyba").setMessage("Nestáhla se žádná data." + "\nkód " + response.code()).show();
+                                }
+                            }
+                        } else {
+                            closeFragmentLoad(null);
+
+                            if (listener != null) {
+                                listener.onAllCheckedPositionsLoaded(null);
+                            } else {
+                                DialogInfo.createDialog(MainActivity.this).setTitle("Chyba").setMessage("Chyba při stahování dat" + "\nkód " + response.code()).show();
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<ResponseAllCheckedPositions> call, Throwable t) {
+                        closeFragmentLoad(null);
+
+                        if (listener != null) {
+                            listener.onAllCheckedPositionsLoaded(null);
+                        } else {
+                            DialogInfo.createDialog(MainActivity.this).setTitle("Chyba").setMessage("Chyba při stahování dat").show();
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    public void deleteAllItems(final OnAllItemsDeletedListener listener) {
+        final ApiDatabase api = ControllerDatabase.getRetrofitInstance().create(ApiDatabase.class);
+        final Call<ResponseDeletePosition> call = api.deleteAllCheckedPositions();
+
+        showFrgmentLoad("Mazání všech dat...", 0, new OnFragmentLoadShowedListener() {
+            @Override
+            public void onFragmentLoadShowed() {
+                call.enqueue(new Callback<ResponseDeletePosition>() {
+                    @Override
+                    public void onResponse(Call<ResponseDeletePosition> call, Response<ResponseDeletePosition> response) {
+
+                        if (response.isSuccessful()) {
+                            if (response.body() != null) {
+
+                                ResponseDeletePosition responseAllCheckedPositions = response.body();
+
+                                if (responseAllCheckedPositions.getMessage() != null) {
+                                    DialogInfo.createDialog(MainActivity.this).setTitle("Zpráva z databáze:").setMessage(responseAllCheckedPositions.getMessage());
+                                }
+
+                                closeFragmentLoad(new OnFragmentLoadClosedListener() {
+                                    @Override
+                                    public void onFragmentLoadClosed() {
+
+                                        if (listener != null) {
+                                            listener.onAllItemsDeletedListener();
+                                        } else {
+                                            showCheckedPositions();
+                                        }
+                                    }
+                                });
+                            } else {
+                                closeFragmentLoad(null);
+
+                                if (listener != null) {
+                                    listener.onAllItemsDeletedListener();
+                                } else {
+                                    DialogInfo.createDialog(MainActivity.this).setTitle("Chyba").setMessage("Chyba při mazání všech poloh." + "\nkód " + response.code()).show();
+                                }
+                            }
+                        } else {
+                            closeFragmentLoad(null);
+
+                            if (listener != null) {
+                                listener.onAllItemsDeletedListener();
+                            } else {
+                                DialogInfo.createDialog(MainActivity.this).setTitle("Chyba").setMessage("Chyba při mazání všech poloh." + "\nkód " + response.code()).show();
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<ResponseDeletePosition> call, Throwable t) {
+                        closeFragmentLoad(null);
+
+                        if (listener != null) {
+                            listener.onAllItemsDeletedListener();
+                        } else {
+                            DialogInfo.createDialog(MainActivity.this).setTitle("Chyba").setMessage("Chyba při mazání všech poloh.").show();
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    /*
+    private String getPhoneNumber() {
+        Log.i(TAG, "MyFirebaseMessagingService - getPhoneNumber()");
+
+        TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED &&
+                    ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_NUMBERS) != PackageManager.PERMISSION_GRANTED &&
+                    ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+
+                return null;
+            } else {
+                return tm.getLine1Number();
+            }
+        } else {
+            return tm.getLine1Number();
+        }
+    }
+    */
 
     private void initStetho() {
         Stetho.InitializerBuilder initializerBuilder = Stetho.newInitializerBuilder(this);
@@ -472,5 +1215,34 @@ public class MainActivity extends AppCompatActivity implements
         initializerBuilder.enableDumpapp(Stetho.defaultDumperPluginsProvider(this));
         Stetho.Initializer initializer = initializerBuilder.build();
         Stetho.initialize(initializer);
+    }
+
+    private BroadcastReceiver locationProvidersChangedStatusReceiver;
+
+    private void registerLocationProvidersChangedStatusReceiver() {
+        Log.i(TAG, "LocationMonitoringService - registerLocationProvidersChangedStatusReceiver()");
+        locationProvidersChangedStatusReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Log.i(TAG, "locationProvidersChangedStatusReceiver - onReceive()");
+                intent.toString();
+            }
+        };
+
+        IntentFilter filter = new IntentFilter(LocationManager.PROVIDERS_CHANGED_ACTION);
+        //filter.addAction(Intent.ACTION_PROVIDER_CHANGED);
+        filter.addAction("android.location.PROVIDERS_CHANGED");
+
+        LocalBroadcastManager.getInstance(this).registerReceiver(locationProvidersChangedStatusReceiver, filter);
+    }
+
+    private void unregisterLocationProvidersChangedStatusReceiver() {
+        Log.i(TAG, "LocationMonitoringService - unregisterLocationProvidersChangedStatusReceiver()");
+
+        try {
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(locationProvidersChangedStatusReceiver);
+        } catch (IllegalArgumentException e) {
+            Log.i(TAG, "LocationMonitoringService - unregisterLocationProvidersChangedStatusReceiver(): " + e.getMessage());
+        }
     }
 }

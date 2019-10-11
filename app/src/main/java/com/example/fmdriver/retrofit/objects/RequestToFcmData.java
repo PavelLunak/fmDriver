@@ -4,8 +4,8 @@ import com.example.fmdriver.utils.AppUtils;
 
 public class RequestToFcmData {
 
-    private String thisFcmToken;
-    private int requestType;
+    protected String thisFcmToken;
+    protected int requestType;
 
 
     public RequestToFcmData() {}

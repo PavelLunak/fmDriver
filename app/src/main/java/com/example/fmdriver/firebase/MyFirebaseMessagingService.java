@@ -89,12 +89,17 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService impleme
                     Intent intent;
 
                     switch (responseType) {
-                        case FCM_RESPONSE_SERVICE_STATUS_STARTED:
-                        case FCM_RESPONSE_SERVICE_STATUS_STOPED:
+                        case FCM_RESPONSE_SERVICE_STATUS:
                             intent = new Intent(ACTION_SERVICE_STATUS_BROADCAST);
-                            intent.putExtra(KEY_RESPONSE_SERVICE_STATUS, data.get("responseType"));
                             intent.putExtra(KEY_BATTERY, data.get(KEY_BATTERY));
+                            intent.putExtra(KEY_MESSAGE, data.get(KEY_MESSAGE));
+                            intent.putExtra(KEY_SERVICE_STATUS, data.get(KEY_SERVICE_STATUS));
+                            intent.putExtra(KEY_GPS_STATUS, data.get(KEY_GPS_STATUS));
                             LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+                            break;
+                        case FCM_RESPONSE_GPS_START:
+                            break;
+                        case FCM_RESPONSE_GPS_STOP:
                             break;
                         case FCM_RESPONSE_TYPE_LOCATION:
                             showNotification(DateTimeUtils.getDateTime(new Date()));
@@ -103,16 +108,30 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService impleme
                             intent.putExtra(KEY_BATTERY, data.get(KEY_BATTERY));
                             LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
                             break;
-                        case FCM_RESPONSE_SERVICE_START:
-                            intent = new Intent(ACTION_SERVICE_STARTET_BROADCAST);
+                        case FCM_RESPONSE_TYPE_SETTINGS_DATABASE_SAVED:
+                            intent = new Intent(ACTION_DATABASE_SETTINGS_UPDATED);
+                            intent.putExtra(KEY_SAVE_NEW_DB_SETTINGS, 1);
                             intent.putExtra(KEY_MESSAGE, data.get(KEY_MESSAGE));
-                            intent.putExtra(KEY_BATTERY, data.get(KEY_BATTERY));
                             LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
                             break;
-                        case FCM_RESPONSE_SERVICE_STOP:
-                            intent = new Intent(ACTION_SERVICE_STOPED_BROADCAST);
+                        case FCM_RESPONSE_TYPE_SETTINGS_DATABASE_SAVE_ERROR:
+                            intent = new Intent(ACTION_DATABASE_SETTINGS_UPDATED);
+                            intent.putExtra(KEY_SAVE_NEW_DB_SETTINGS, 0);
                             intent.putExtra(KEY_MESSAGE, data.get(KEY_MESSAGE));
-                            intent.putExtra(KEY_BATTERY, data.get(KEY_BATTERY));
+                            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+                            break;
+                        case FCM_RESPONSE_TYPE_SETTINGS_LOADED:
+                            intent = new Intent(ACTION_DATABASE_SETTINGS_LOADED);
+                            intent.putExtra(KEY_MESSAGE, data.get(KEY_MESSAGE));
+                            intent.putExtra(KEY_DB_ENABLED, data.get(KEY_DB_ENABLED));
+                            intent.putExtra(KEY_SAVE_INTERVAL, data.get(KEY_SAVE_INTERVAL));
+                            intent.putExtra(KEY_TIME_UNIT, data.get(KEY_TIME_UNIT));
+                            intent.putExtra(KEY_MAX_COUNT_LOC_SAVE, data.get(KEY_MAX_COUNT_LOC_SAVE));
+                            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+                            break;
+                        case FCM_RESPONSE_TYPE_MESSAGE:
+                            intent = new Intent(ACTION_SHOW_MESSAGE);
+                            intent.putExtra(KEY_MESSAGE, data.get(KEY_MESSAGE));
                             LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
                             break;
                     }

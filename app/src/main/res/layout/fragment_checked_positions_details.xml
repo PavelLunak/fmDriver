@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white">
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <RelativeLayout
+            android:id="@+id/layoutId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="5dp">
+
+            <TextView
+                android:id="@+id/titleId"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ID" />
+
+            <TextView
+                android:id="@+id/labelId"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/titleId"
+                android:text="TextView"
+                android:textSize="24sp" />
+
+        </RelativeLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorGray" />
+
+        <RelativeLayout
+            android:id="@+id/layoutCountryCode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="5dp">
+
+            <TextView
+                android:id="@+id/titleCountryCode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CountryCode" />
+
+            <TextView
+                android:id="@+id/labelCountryCode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/titleCountryCode"
+                android:text="TextView"
+                android:textSize="24sp" />
+
+        </RelativeLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorGray" />
+
+        <RelativeLayout
+            android:id="@+id/layoutCountryName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="5dp">
+
+            <TextView
+                android:id="@+id/titleCountryName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CountryName" />
+
+            <TextView
+                android:id="@+id/labelCountryName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/titleCountryName"
+                android:text="TextView"
+                android:textSize="24sp" />
+
+        </RelativeLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorGray" />
+
+        <RelativeLayout
+            android:id="@+id/layoutFeatureName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="5dp">
+
+            <TextView
+                android:id="@+id/titleFeatureName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="FeaturesName" />
+
+            <TextView
+                android:id="@+id/labelFeatureName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/titleFeatureName"
+                android:text="TextView"
+                android:textSize="24sp" />
+
+        </RelativeLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorGray" />
+
+        <RelativeLayout
+            android:id="@+id/layoutLocality"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="5dp">
+
+            <TextView
+                android:id="@+id/titleLocality"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Locality"
+                tools:text="Locality" />
+
+            <TextView
+                android:id="@+id/labelLocality"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/titleLocality"
+                android:text="TextView"
+                android:textSize="24sp" />
+
+        </RelativeLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorGray" />
+
+        <RelativeLayout
+            android:id="@+id/layoutPhone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="5dp">
+
+            <TextView
+                android:id="@+id/titlePhone"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Phone" />
+
+            <TextView
+                android:id="@+id/labelPhone"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/titlePhone"
+                android:text="TextView"
+                android:textSize="24sp" />
+
+        </RelativeLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorGray" />
+
+        <RelativeLayout
+            android:id="@+id/layoutPostalCode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="5dp">
+
+            <TextView
+                android:id="@+id/titlePostalCode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PostalCode" />
+
+            <TextView
+                android:id="@+id/labelPostalCode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/titlePostalCode"
+                android:text="TextView"
+                android:textSize="24sp" />
+
+        </RelativeLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorGray" />
+
+        <RelativeLayout
+            android:id="@+id/layoutPremises"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="5dp">
+
+            <TextView
+                android:id="@+id/titlePremises"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Premises" />
+
+            <TextView
+                android:id="@+id/labelPremises"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/titlePremises"
+                android:text="TextView"
+                android:textSize="24sp" />
+
+        </RelativeLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorGray" />
+
+        <RelativeLayout
+            android:id="@+id/layoutAdminArea"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="5dp">
+
+            <TextView
+                android:id="@+id/titleAdminArea"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="AdminArea" />
+
+            <TextView
+                android:id="@+id/labelAdminArea"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/titleAdminArea"
+                android:text="TextView"
+                android:textSize="24sp" />
+
+        </RelativeLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorGray" />
+
+        <RelativeLayout
+            android:id="@+id/layoutSubAdminArea"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="5dp">
+
+            <TextView
+                android:id="@+id/titleSubAdminArea"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SubAdminArea" />
+
+            <TextView
+                android:id="@+id/labelSubAdminArea"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/titleSubAdminArea"
+                android:text="TextView"
+                android:textSize="24sp" />
+
+        </RelativeLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorGray" />
+
+        <RelativeLayout
+            android:id="@+id/layoutSubLocality"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="5dp">
+
+            <TextView
+                android:id="@+id/titleSubLocality"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SubLocality" />
+
+            <TextView
+                android:id="@+id/labelSubLocality"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/titleSubLocality"
+                android:text="TextView"
+                android:textSize="24sp" />
+
+        </RelativeLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorGray" />
+
+        <RelativeLayout
+            android:id="@+id/layoutThoroughfare"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="5dp">
+
+            <TextView
+                android:id="@+id/titleThoroughfare"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Thoroughfare" />
+
+            <TextView
+                android:id="@+id/labelThoroughfare"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/titleThoroughfare"
+                android:text="TextView"
+                android:textSize="24sp" />
+
+        </RelativeLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorGray" />
+
+        <RelativeLayout
+            android:id="@+id/layoutSubLocalgetSubThoroughfareity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="5dp">
+
+            <TextView
+                android:id="@+id/titleSubLocalgetSubThoroughfareity"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SubLocalgetSubThoroughfareity" />
+
+            <TextView
+                android:id="@+id/labelSubThoroughfareity"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/titleSubLocalgetSubThoroughfareity"
+                android:text="TextView"
+                android:textSize="24sp" />
+
+        </RelativeLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorGray" />
+
+        <RelativeLayout
+            android:id="@+id/layoutUrl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="5dp">
+
+            <TextView
+                android:id="@+id/titleUrl"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Url" />
+
+            <TextView
+                android:id="@+id/labelUrl"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/titleUrl"
+                android:text="TextView"
+                android:textSize="24sp" />
+
+        </RelativeLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorGray" />
+
+        <RelativeLayout
+            android:id="@+id/layoutExtras"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="5dp">
+
+            <TextView
+                android:id="@+id/titleExtras"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Extras" />
+
+            <TextView
+                android:id="@+id/labelExtras"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/titleExtras"
+                android:text="TextView"
+                android:textSize="24sp" />
+
+        </RelativeLayout>
+
+    </LinearLayout>
+
+</ScrollView>

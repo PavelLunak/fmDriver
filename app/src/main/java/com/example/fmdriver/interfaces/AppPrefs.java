@@ -17,4 +17,10 @@ public interface AppPrefs {
     int saveCountInterval();
 
     String fcmToken();
+
+    boolean savingToDatabaseEnabled();
+    long autoCheckedPositionSavingInterval();
+    int maxCountOfLocationChecked();
+    int timeUnit();
+    String lastPhoneNumber();
 }

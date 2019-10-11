@@ -46,15 +46,78 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
+        <TextView
+            android:id="@+id/labelCountDownService"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignStart="@id/labelServiceStatus"
+            android:layout_alignLeft="@id/labelServiceStatus"
+            android:layout_alignTop="@id/labelServiceStatus"
+            android:layout_alignEnd="@id/labelServiceStatus"
+            android:layout_alignRight="@id/labelServiceStatus"
+            android:layout_alignBottom="@id/labelServiceStatus"
+            android:gravity="center_horizontal|center_vertical"
+            android:text="30"
+            android:textColor="#FFC107"
+            android:textSize="18sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/labelCountDownGps"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignStart="@id/labelGpsStatus"
+            android:layout_alignLeft="@id/labelGpsStatus"
+            android:layout_alignTop="@id/labelGpsStatus"
+            android:layout_alignEnd="@id/labelGpsStatus"
+            android:layout_alignRight="@id/labelGpsStatus"
+            android:layout_alignBottom="@id/labelGpsStatus"
+            android:gravity="center_horizontal|center_vertical"
+            android:text="30"
+            android:textColor="#FFC107"
+            android:textSize="18sp"
+            android:visibility="gone" />
+
+        <ProgressBar
+            android:id="@+id/progressService"
+            style="?android:attr/progressBarStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignStart="@id/labelServiceStatus"
+            android:layout_alignLeft="@id/labelServiceStatus"
+            android:layout_alignTop="@id/labelServiceStatus"
+            android:layout_alignEnd="@id/labelServiceStatus"
+            android:layout_alignRight="@id/labelServiceStatus"
+            android:layout_alignBottom="@id/labelServiceStatus"
+            android:visibility="gone" />
+
+        <ProgressBar
+            android:id="@+id/progressGps"
+            style="?android:attr/progressBarStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignStart="@id/labelGpsStatus"
+            android:layout_alignLeft="@id/labelGpsStatus"
+            android:layout_alignTop="@id/labelGpsStatus"
+            android:layout_alignEnd="@id/labelGpsStatus"
+            android:layout_alignRight="@id/labelGpsStatus"
+            android:layout_alignBottom="@id/labelGpsStatus"
+            android:visibility="gone" />
+
     </RelativeLayout>
 
     <TextView
         android:id="@+id/labelMessage"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/layoutStatus"
         android:layout_centerHorizontal="true"
-        android:text="TextView"
+        android:layout_marginStart="20dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginRight="20dp"
+        android:gravity="center_horizontal"
+        android:text="Zpráva"
         android:textColor="#FFC107" />
 
     <TextView
@@ -63,99 +126,302 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/labelMessage"
         android:layout_centerHorizontal="true"
-        android:text="TextView"
+        android:text="Baterie"
+        android:textColor="#FFC107" />
+
+    <TextView
+        android:id="@+id/labelLastGpsUpdatet"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/labelBattery"
+        android:layout_centerHorizontal="true"
+        android:layout_marginStart="20dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginRight="20dp"
+        android:gravity="center_horizontal"
+        android:text="Poslední aktualizace polohy"
+        android:textColor="#FFC107" />
+
+    <TextView
+        android:id="@+id/labelAddress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/labelLastGpsUpdatet"
+        android:layout_centerHorizontal="true"
+        android:layout_marginStart="20dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginRight="20dp"
+        android:gravity="center_horizontal"
+        android:text="Adresa"
         android:textColor="#FFC107" />
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/layoutStatus"
-        android:layout_marginTop="40dp">
+        android:layout_below="@id/labelAddress"
+        android:layout_marginTop="10dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/btnCheckService"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="20dp"
+                android:layout_marginLeft="20dp"
                 android:layout_marginTop="10dp"
                 android:layout_marginEnd="20dp"
-                android:layout_marginBottom="20dp"
-                android:background="@color/colorPrimary"
-                android:gravity="center_horizontal"
-                android:paddingLeft="50dp"
-                android:paddingTop="13dp"
-                android:paddingRight="50dp"
-                android:paddingBottom="13dp"
-                android:text="Stav Service"
-                android:textAllCaps="true"
-                android:textColor="@android:color/white"
-                android:textSize="18sp"
-                android:textStyle="normal|bold" />
+                android:layout_marginRight="20dp"
+                android:orientation="horizontal"
+                android:weightSum="100">
 
-            <TextView
-                android:id="@+id/btnStartStopService"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="20dp"
-                android:layout_marginTop="10dp"
-                android:layout_marginEnd="20dp"
-                android:layout_marginBottom="20dp"
-                android:background="@color/colorPrimary"
-                android:gravity="center_horizontal"
-                android:paddingLeft="50dp"
-                android:paddingTop="13dp"
-                android:paddingRight="50dp"
-                android:paddingBottom="13dp"
-                android:text="Start/Stop Service"
-                android:textAllCaps="true"
-                android:textColor="@android:color/white"
-                android:textSize="18sp"
-                android:textStyle="normal|bold" />
+                <TextView
+                    android:id="@+id/btnStartStopService"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="5dp"
+                    android:layout_marginRight="5dp"
+                    android:layout_weight="50"
+                    android:background="@color/colorPrimary"
+                    android:gravity="center_horizontal"
+                    android:paddingLeft="10dp"
+                    android:paddingTop="13dp"
+                    android:paddingRight="10dp"
+                    android:paddingBottom="13dp"
+                    android:text="ON/OFF"
+                    android:textAllCaps="true"
+                    android:textColor="@android:color/white"
+                    android:textSize="18sp"
+                    android:textStyle="normal|bold" />
 
-            <TextView
-                android:id="@+id/btnMap"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="20dp"
-                android:layout_marginTop="10dp"
-                android:layout_marginEnd="20dp"
-                android:layout_marginBottom="20dp"
-                android:background="@color/colorPrimary"
-                android:gravity="center_horizontal"
-                android:paddingLeft="50dp"
-                android:paddingTop="13dp"
-                android:paddingRight="50dp"
-                android:paddingBottom="13dp"
-                android:text="Mapa"
-                android:textAllCaps="true"
-                android:textColor="@android:color/white"
-                android:textSize="18sp"
-                android:textStyle="normal|bold" />
+                <TextView
+                    android:id="@+id/btnCheckService"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    android:layout_marginLeft="5dp"
+                    android:layout_weight="50"
+                    android:background="@color/colorPrimary"
+                    android:gravity="center_horizontal"
+                    android:paddingLeft="10dp"
+                    android:paddingTop="13dp"
+                    android:paddingRight="10dp"
+                    android:paddingBottom="13dp"
+                    android:text="Status"
+                    android:textAllCaps="true"
+                    android:textColor="@android:color/white"
+                    android:textSize="18sp"
+                    android:textStyle="normal|bold" />
 
-            <TextView
-                android:id="@+id/btnToken"
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="20dp"
+                android:layout_marginLeft="20dp"
                 android:layout_marginTop="10dp"
                 android:layout_marginEnd="20dp"
-                android:layout_marginBottom="20dp"
-                android:background="@color/colorPrimary"
-                android:gravity="center_horizontal"
-                android:paddingLeft="50dp"
-                android:paddingTop="13dp"
-                android:paddingRight="50dp"
-                android:paddingBottom="13dp"
-                android:text="Token"
-                android:textAllCaps="true"
-                android:textColor="@android:color/white"
-                android:textSize="18sp"
-                android:textStyle="normal|bold" />
+                android:layout_marginRight="20dp"
+                android:orientation="horizontal"
+                android:weightSum="100">
+
+                <TextView
+                    android:id="@+id/btnStartStopGps"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="5dp"
+                    android:layout_marginRight="5dp"
+                    android:layout_weight="50"
+                    android:background="@color/colorPrimary"
+                    android:gravity="center_horizontal"
+                    android:paddingLeft="10dp"
+                    android:paddingTop="13dp"
+                    android:paddingRight="10dp"
+                    android:paddingBottom="13dp"
+                    android:text="GPS ON/OFF"
+                    android:textAllCaps="true"
+                    android:textColor="@android:color/white"
+                    android:textSize="18sp"
+                    android:textStyle="normal|bold" />
+
+                <TextView
+                    android:id="@+id/btnCheckGps"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    android:layout_marginLeft="5dp"
+                    android:layout_weight="50"
+                    android:background="@color/colorPrimary"
+                    android:gravity="center_horizontal"
+                    android:paddingLeft="10dp"
+                    android:paddingTop="13dp"
+                    android:paddingRight="10dp"
+                    android:paddingBottom="13dp"
+                    android:text="GPS Status"
+                    android:textAllCaps="true"
+                    android:textColor="@android:color/white"
+                    android:textSize="18sp"
+                    android:textStyle="normal|bold" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginLeft="20dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginRight="20dp"
+                android:orientation="horizontal"
+                android:weightSum="100">
+
+                <TextView
+                    android:id="@+id/btnMap"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="5dp"
+                    android:layout_marginRight="5dp"
+                    android:layout_weight="50"
+                    android:background="@color/colorPrimary"
+                    android:gravity="center_horizontal"
+                    android:paddingLeft="10dp"
+                    android:paddingTop="13dp"
+                    android:paddingRight="10dp"
+                    android:paddingBottom="13dp"
+                    android:text="Mapa"
+                    android:textAllCaps="true"
+                    android:textColor="@android:color/white"
+                    android:textSize="18sp"
+                    android:textStyle="normal|bold" />
+
+                <TextView
+                    android:id="@+id/btnToken"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    android:layout_marginLeft="5dp"
+                    android:layout_weight="50"
+                    android:background="@color/colorPrimary"
+                    android:gravity="center_horizontal"
+                    android:paddingLeft="10dp"
+                    android:paddingTop="13dp"
+                    android:paddingRight="10dp"
+                    android:paddingBottom="13dp"
+                    android:text="Token"
+                    android:textAllCaps="true"
+                    android:textColor="@android:color/white"
+                    android:textSize="18sp"
+                    android:textStyle="normal|bold" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginLeft="20dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginRight="20dp"
+                android:orientation="horizontal"
+                android:weightSum="100">
+
+                <TextView
+                    android:id="@+id/btnSaveToDb"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="5dp"
+                    android:layout_marginRight="5dp"
+                    android:layout_weight="50"
+                    android:background="@color/colorPrimary"
+                    android:gravity="center_horizontal"
+                    android:paddingLeft="10dp"
+                    android:paddingTop="13dp"
+                    android:paddingRight="10dp"
+                    android:paddingBottom="13dp"
+                    android:text="Databáze"
+                    android:textAllCaps="true"
+                    android:textColor="@android:color/white"
+                    android:textSize="18sp"
+                    android:textStyle="normal|bold" />
+
+                <TextView
+                    android:id="@+id/btnShow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    android:layout_marginLeft="5dp"
+                    android:layout_weight="50"
+                    android:background="@color/colorPrimary"
+                    android:gravity="center_horizontal"
+                    android:paddingLeft="10dp"
+                    android:paddingTop="13dp"
+                    android:paddingRight="10dp"
+                    android:paddingBottom="13dp"
+                    android:text="Uložená data"
+                    android:textAllCaps="true"
+                    android:textColor="@android:color/white"
+                    android:textSize="18sp"
+                    android:textStyle="normal|bold" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginLeft="20dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginRight="20dp"
+                android:orientation="horizontal"
+                android:weightSum="100">
+
+                <TextView
+                    android:id="@+id/btnAlarm"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="5dp"
+                    android:layout_marginRight="5dp"
+                    android:layout_weight="50"
+                    android:background="@color/colorPrimary"
+                    android:gravity="center_horizontal"
+                    android:paddingLeft="10dp"
+                    android:paddingTop="13dp"
+                    android:paddingRight="10dp"
+                    android:paddingBottom="13dp"
+                    android:text="ALARM"
+                    android:textAllCaps="true"
+                    android:textColor="@android:color/white"
+                    android:textSize="18sp"
+                    android:textStyle="normal|bold" />
+
+                <TextView
+                    android:id="@+id/btnCall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    android:layout_marginLeft="5dp"
+                    android:layout_weight="50"
+                    android:background="@color/colorPrimary"
+                    android:gravity="center_horizontal"
+                    android:paddingLeft="10dp"
+                    android:paddingTop="13dp"
+                    android:paddingRight="10dp"
+                    android:paddingBottom="13dp"
+                    android:text="Zavolej mi"
+                    android:textAllCaps="true"
+                    android:textColor="@android:color/white"
+                    android:textSize="18sp"
+                    android:textStyle="normal|bold" />
+
+            </LinearLayout>
 
         </LinearLayout>
 

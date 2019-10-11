@@ -122,6 +122,16 @@
                 android:text="TextView"
                 android:textColor="#7EDBFF"
                 android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/labelSpeed"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_marginLeft="10dp"
+                android:text="TextView"
+                android:textColor="#7EDBFF"
+                android:textSize="10sp" />
         </LinearLayout>
 
     </RelativeLayout>
