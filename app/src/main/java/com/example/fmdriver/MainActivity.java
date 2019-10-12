@@ -90,6 +90,8 @@ public class MainActivity extends AppCompatActivity implements
             btnToken,
             btnCheckService,
             btnStartStopService,
+            btnStartStopGps,
+            btnCheckGps,
             btnSaveToDb,
             btnShow,
             btnAlarm,
@@ -117,7 +119,8 @@ public class MainActivity extends AppCompatActivity implements
     public boolean
             isServiceStarted,
             isGpsStarted,
-            checkingServiceStatusInProgress;
+            checkingServiceStatusInProgress,
+            isRequestStartGps;
 
     @InstanceState
     public static ArrayList<PositionChecked> itemsCheckedPositions;
@@ -171,7 +174,7 @@ public class MainActivity extends AppCompatActivity implements
         initStetho();
 
         if (serviceCountDownCounter != -1) startCountDownServiceConnect();
-        if (gpsCountDownCounter != -1) startCountDownGpsStart();
+        //if (gpsCountDownCounter != -1) startCountDownGpsStart(isRequestStartGps);
         if (locationResultCountDownCounter != -1) startCountDownLocationResult();
     }
 
@@ -200,6 +203,8 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onServiceStatusChecked(final int serviceStatus, final int gpsStatus) {
         Log.i(TAG, "MainActivity - onServiceStatusChecked()");
+        Log.i(TAG, "MainActivity - onServiceStatusChecked() - serviceStatus: " + serviceStatus);
+        Log.i(TAG, "MainActivity - onServiceStatusChecked() - gpsStatus: " + gpsStatus);
 
         checkingServiceStatusInProgress = false;
         //afterServiceStatusChanged(serviceStatus == STARTED);
@@ -221,16 +226,16 @@ public class MainActivity extends AppCompatActivity implements
 
         if (gpsStatus == STARTED) {
             isGpsStarted = true;
-            //btnStartStopGps.setText("GPS OFF");
+            btnStartStopGps.setText("GPS OFF");
             labelGpsStatus.setAlpha(ALPHA_VISIBILITY_VISIBLE);
         } else if (gpsStatus == STOPED) {
             isGpsStarted = false;
-            //btnStartStopGps.setText("GPS ON");
+            btnStartStopGps.setText("GPS ON");
             labelGpsStatus.setAlpha(ALPHA_VISIBILITY_GONE);
         } else {
             DialogInfo.createDialog(MainActivity.this)
                     .setTitle("Chyba")
-                    .setMessage("Nepodařilo se zjistit stav service")
+                    .setMessage("Nepodařilo se zjistit stav GPS")
                     .show();
         }
     }
@@ -244,7 +249,7 @@ public class MainActivity extends AppCompatActivity implements
     void clickBtnMap() {
         if (locationResultTimer != null) return;
         Animators.animateButtonClick(btnMap);
-        startCountDownGpsStart();
+        startCountDownGpsStart(false);
         sendRequestToFcm(FCM_REQUEST_TYPE_LOCATION, true, null);
 
         /*
@@ -280,6 +285,20 @@ public class MainActivity extends AppCompatActivity implements
         Animators.animateButtonClick(btnStartStopService);
         startCountDownServiceConnect();
         sendRequestToFcm(isServiceStarted ? FCM_REQUEST_TYPE_SERVICE_STOP : FCM_REQUEST_TYPE_SERVICE_START, true, null);
+    }
+
+    @Click(R.id.btnStartStopGps)
+    void clickBtnStartStopGps() {
+        if (gpsTimer != null) return;
+        Animators.animateButtonClick(btnStartStopGps);
+        isRequestStartGps = true;
+        startCountDownGpsStart(true);
+        sendRequestToFcm(isGpsStarted ? FCM_REQUEST_TYPE_GPS_STOP : FCM_REQUEST_TYPE_GPS_START, true, null);
+    }
+
+    @Click(R.id.btnCheckGps)
+    void clickBtnCheckService() {
+        Animators.animateButtonClick(btnCheckGps);
     }
 
     @Click(R.id.btnSaveToDb)
@@ -643,12 +662,15 @@ public class MainActivity extends AppCompatActivity implements
         }.start();
     }
 
-    private void startCountDownGpsStart() {
+    private void startCountDownGpsStart(final boolean requestStartGps) {
         if (labelGpsStatus != null) labelGpsStatus.setAlpha(ALPHA_VISIBILITY_GONE);
         if (labelCountDownGps != null) labelCountDownGps.setVisibility(View.VISIBLE);
         if (progressGps != null) progressGps.setVisibility(View.VISIBLE);
 
-        gpsTimer = new CountDownTimer(gpsCountDownCounter == -1 ? MAX_TIME_FOR_WAITING_FCM_RESPONSE_LOCATION_CREATE : gpsCountDownCounter, 1000) {
+        long counterLimit = MAX_TIME_FOR_WAITING_FCM_RESPONSE_LOCATION_CREATE;
+        if (requestStartGps) counterLimit = MAX_TIME_FOR_WAITING_FCM_RESPONSE;
+
+        gpsTimer = new CountDownTimer(gpsCountDownCounter == -1 ? counterLimit : gpsCountDownCounter, 1000) {
 
             public void onTick(long millisUntilFinished) {
                 labelCountDownGps.setText("" + millisUntilFinished / 1000);
@@ -658,9 +680,46 @@ public class MainActivity extends AppCompatActivity implements
             public void onFinish() {
                 gpsTimer = null;
                 gpsCountDownCounter = -1;
+                isRequestStartGps = false;
 
-                startCountDownLocationResult();
-                sendRequestToFcm(FCM_REQUEST_TYPE_LOCATION_RESULT, true, null);
+                if (labelCountDownGps != null) labelCountDownGps.setText("" + (MAX_TIME_FOR_WAITING_FCM_RESPONSE + 1000) / 1000);
+                if (labelCountDownGps != null) labelCountDownGps.setVisibility(View.GONE);
+                if (progressGps != null) progressGps.setVisibility(View.GONE);
+
+                isWaitingForResponseFromFcm = false;
+
+                closeFragmentLoad(new OnFragmentLoadClosedListener() {
+                    @Override
+                    public void onFragmentLoadClosed() {
+                        DialogInfo.createDialog(MainActivity.this)
+                                .setTitle("Chyba")
+                                .setMessage("Nepodařilo se zpracovat úpžadavek v nastaveném časovém limitu")
+                                .show();
+                    }
+                });
+
+                /*
+                if (requestStartGps) {
+                    if (labelCountDownGps != null) labelCountDownGps.setText("" + (MAX_TIME_FOR_WAITING_FCM_RESPONSE + 1000) / 1000);
+                    if (labelCountDownGps != null) labelCountDownGps.setVisibility(View.GONE);
+                    if (progressGps != null) progressGps.setVisibility(View.GONE);
+
+                    isWaitingForResponseFromFcm = false;
+
+                    closeFragmentLoad(new OnFragmentLoadClosedListener() {
+                        @Override
+                        public void onFragmentLoadClosed() {
+                            DialogInfo.createDialog(MainActivity.this)
+                                    .setTitle("Chyba")
+                                    .setMessage("Nepodařilo se zapnout GPS v nastaveném časovém limitu")
+                                    .show();
+                        }
+                    });
+                } else {
+                    startCountDownLocationResult();
+                    sendRequestToFcm(FCM_REQUEST_TYPE_LOCATION_RESULT, true, null);
+                }
+                */
             }
         }.start();
     }
@@ -791,6 +850,7 @@ public class MainActivity extends AppCompatActivity implements
                 Log.i(TAG, "LocacionReceiver() - onReceive()");
 
                 stopCountDownLocationResult();
+                stopCountDownGpsConnect();
 
                 if (intent == null) return;
 
@@ -862,7 +922,10 @@ public class MainActivity extends AppCompatActivity implements
                 Log.i(TAG, "serviceStatusCheckedReceiver - onReceive()");
 
                 isWaitingForResponseFromFcm = false;
+                isRequestStartGps = false;
+
                 stopCountDownServiceConnect();
+                stopCountDownGpsConnect();
 
                 if (intent == null) return;
                 updateBatteryStatus(intent.getStringExtra(KEY_BATTERY));
@@ -934,6 +997,8 @@ public class MainActivity extends AppCompatActivity implements
                 long autoCheckedPositionSavingInterval = -1;
                 int maxCountOfLocationChecked = -1;
                 int timeUnit = TIME_UNIT_SECONDS;
+                long locationsInterval = LOCATION_DEFAULT_INTERVAL;
+                int locationsIntervalTimeUnit = TIME_UNIT_SECONDS;
 
                 stopCountDownSettings();
 
@@ -942,12 +1007,16 @@ public class MainActivity extends AppCompatActivity implements
                     autoCheckedPositionSavingInterval = Long.parseLong(intent.getStringExtra(KEY_SAVE_INTERVAL));
                     maxCountOfLocationChecked = Integer.parseInt(intent.getStringExtra(KEY_MAX_COUNT_LOC_SAVE));
                     timeUnit = Integer.parseInt(intent.getStringExtra(KEY_TIME_UNIT));
+                    locationsInterval = Long.parseLong(intent.getStringExtra(KEY_LOCATIONS_INTERVAL));
+                    locationsIntervalTimeUnit = Integer.parseInt(intent.getStringExtra(KEY_LOCATIONS_INTERVAL_TIME_UNIT));
 
                     appPrefs.edit()
                             .savingToDatabaseEnabled().put(savingToDatabaseEnabled == 1)
                             .autoCheckedPositionSavingInterval().put(autoCheckedPositionSavingInterval)
                             .maxCountOfLocationChecked().put(maxCountOfLocationChecked)
                             .timeUnit().put(timeUnit)
+                            .locationInterval().put(locationsInterval)
+                            .locationIntervalTimeUnit().put(locationsIntervalTimeUnit)
                             .apply();
 
                     FragmentSaveToDb fragmentSaveToDb = (FragmentSaveToDb) fragmentManager.findFragmentByTag("FragmentSaveToDb_");

@@ -16,7 +16,6 @@ import com.example.fmdriver.customViews.DialogInfo;
 import com.example.fmdriver.listeners.OnFragmentLoadClosedListener;
 import com.example.fmdriver.listeners.OnFragmentLoadShowedListener;
 import com.example.fmdriver.retrofit.objects.RequestSettingsSaveIntoDatabase;
-import com.example.fmdriver.retrofit.objects.RequestToFcmData;
 import com.example.fmdriver.utils.Animators;
 import com.example.fmdriver.utils.AppConstants;
 
@@ -101,6 +100,9 @@ public class FragmentSaveToDb extends Fragment implements AppConstants {
         int count = 0;
         int timeUnit = TIME_UNIT_SECONDS;
 
+        long intervalPositons = 0;
+        int timeUnitPositons = TIME_UNIT_SECONDS;
+
         try {
             if (rbIntervalHours.isChecked()) {
                 interval = Long.parseLong(etInterval.getText().toString()) * 60 * 60 * 1000;
@@ -115,6 +117,18 @@ public class FragmentSaveToDb extends Fragment implements AppConstants {
 
             if (chbInfinity.isChecked()) count = COUNT_OF_LOCATIONS_INFINITY;
             else count = Integer.parseInt(etCount.getText().toString());
+
+
+            if (rbIntervalPositionsHours.isChecked()) {
+                intervalPositons = Long.parseLong(etIntervalPositions.getText().toString()) * 60 * 60 * 1000;
+                timeUnitPositons = TIME_UNIT_HOURS;
+            } else if (rbIntervalPositionsMinutes.isChecked()) {
+                intervalPositons = Long.parseLong(etIntervalPositions.getText().toString()) * 60 * 1000;
+                timeUnitPositons = TIME_UNIT_MINUTES;
+            } else if (rbIntervalPositionsSeconds.isChecked()) {
+                intervalPositons = Long.parseLong(etIntervalPositions.getText().toString()) * 1000;
+                timeUnitPositons = TIME_UNIT_SECONDS;
+            }
         } catch (NumberFormatException e) {
             e.printStackTrace();
             DialogInfo.createDialog(activity).setTitle("Chyba").setMessage("NumberFormatException").show();
@@ -123,10 +137,13 @@ public class FragmentSaveToDb extends Fragment implements AppConstants {
             return;
         }
 
-        MainActivity.appPrefs.edit().savingToDatabaseEnabled().put(switchEnableSave.isChecked()).apply();
-        MainActivity.appPrefs.edit().autoCheckedPositionSavingInterval().put(interval).apply();
-        MainActivity.appPrefs.edit().maxCountOfLocationChecked().put(count).apply();
-        MainActivity.appPrefs.edit().timeUnit().put(timeUnit).apply();
+        MainActivity.appPrefs.edit().savingToDatabaseEnabled().put(switchEnableSave.isChecked())
+                .autoCheckedPositionSavingInterval().put(interval)
+                .maxCountOfLocationChecked().put(count)
+                .timeUnit().put(timeUnit)
+                .locationInterval().put(intervalPositons)
+                .locationIntervalTimeUnit().put(timeUnitPositons)
+                .apply();
 
         RequestSettingsSaveIntoDatabase request = new RequestSettingsSaveIntoDatabase(
                 MainActivity.appPrefs.fcmToken().get(),
@@ -134,7 +151,9 @@ public class FragmentSaveToDb extends Fragment implements AppConstants {
                 switchEnableSave.isChecked() ? 1 : 0,
                 interval,
                 count,
-                timeUnit);
+                timeUnit,
+                intervalPositons,
+                timeUnitPositons);
 
         activity.startCountDownSettings();
         activity.sendRequestToFcm(FCM_REQUEST_TYPE_SETTINGS_DATABASE, true, request);
@@ -182,6 +201,21 @@ public class FragmentSaveToDb extends Fragment implements AppConstants {
             case TIME_UNIT_SECONDS:
                 if (rbIntervalSeconds != null) rbIntervalSeconds.setChecked(true);
                 if (etInterval != null) etInterval.setText("" + MainActivity.appPrefs.autoCheckedPositionSavingInterval().get() / 1000);
+                break;
+        }
+
+        switch (MainActivity.appPrefs.locationIntervalTimeUnit().get()) {
+            case TIME_UNIT_HOURS:
+                if (rbIntervalPositionsHours != null) rbIntervalPositionsHours.setChecked(true);
+                if (etIntervalPositions != null) etIntervalPositions.setText("" + MainActivity.appPrefs.locationInterval().get() / 1000 / 60 / 60);
+                break;
+            case TIME_UNIT_MINUTES:
+                if (rbIntervalPositionsMinutes != null) rbIntervalPositionsMinutes.setChecked(true);
+                if (etIntervalPositions != null) etIntervalPositions.setText("" + MainActivity.appPrefs.locationInterval().get() / 1000 / 60);
+                break;
+            case TIME_UNIT_SECONDS:
+                if (rbIntervalPositionsSeconds != null) rbIntervalPositionsSeconds.setChecked(true);
+                if (etIntervalPositions != null) etIntervalPositions.setText("" + MainActivity.appPrefs.locationInterval().get() / 1000);
                 break;
         }
 

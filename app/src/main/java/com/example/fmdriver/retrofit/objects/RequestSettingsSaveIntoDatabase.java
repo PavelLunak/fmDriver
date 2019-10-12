@@ -1,14 +1,14 @@
 package com.example.fmdriver.retrofit.objects;
 
 
-import com.example.fmdriver.utils.AppUtils;
-
 public class RequestSettingsSaveIntoDatabase extends RequestToFcmData {
 
     private int savingToDatabaseEnabled;    //0 = DISABLED, 1 = ENABLED
     private long autoCheckedPositionSavingInterval;
     private int maxCountOfLocationChecked;
     private int timeUnit;
+    private long locationsInterval;
+    private int locationsIntervalTimeUnit;
 
 
     public RequestSettingsSaveIntoDatabase(
@@ -17,30 +17,17 @@ public class RequestSettingsSaveIntoDatabase extends RequestToFcmData {
             int savingToDatabaseEnabled,
             long autoCheckedPositionSavingInterval,
             int maxCountOfLocationChecked,
-            int timeUnit) {
+            int timeUnit,
+            long locationsInterval,
+            int locationsIntervalTimeUnit) {
 
         super(thisFcmToken, requestType);
         this.savingToDatabaseEnabled = savingToDatabaseEnabled;
         this.autoCheckedPositionSavingInterval = autoCheckedPositionSavingInterval;
         this.maxCountOfLocationChecked = maxCountOfLocationChecked;
         this.timeUnit = timeUnit;
-    }
-
-
-    @Override
-    public String toString() {
-        return new StringBuilder("RequestToFcmData: ")
-                .append("\nthisFcmToken: ")
-                .append(super.thisFcmToken == null ? "null" : thisFcmToken)
-                .append("\nrequestType: ")
-                .append(AppUtils.requestTypeToString(this.requestType))
-                .append("\nsavingToDatabaseEnabled: ")
-                .append(savingToDatabaseEnabled)
-                .append("\nautoCheckedPositionSavingInterval: ")
-                .append(autoCheckedPositionSavingInterval)
-                .append("\nmaxCountOfLocationChecked: ")
-                .append(maxCountOfLocationChecked)
-                .toString();
+        this.locationsInterval = locationsInterval;
+        this.locationsIntervalTimeUnit = locationsIntervalTimeUnit;
     }
 
 
@@ -74,5 +61,21 @@ public class RequestSettingsSaveIntoDatabase extends RequestToFcmData {
 
     public void setTimeUnit(int timeUnit) {
         this.timeUnit = timeUnit;
+    }
+
+    public long getLocationsInterval() {
+        return locationsInterval;
+    }
+
+    public void setLocationsInterval(long locationsInterval) {
+        this.locationsInterval = locationsInterval;
+    }
+
+    public int getLocationsIntervalTimeUnit() {
+        return locationsIntervalTimeUnit;
+    }
+
+    public void setLocationsIntervalTimeUnit(int locationsIntervalTimeUnit) {
+        this.locationsIntervalTimeUnit = locationsIntervalTimeUnit;
     }
 }

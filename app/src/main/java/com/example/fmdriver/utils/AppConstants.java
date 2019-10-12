@@ -9,11 +9,11 @@ public interface AppConstants {
 
     String TAG = "log_tag";
 
-    int LOCATION_INTERVAL = 1000;
-    int FASTEST_LOCATION_INTERVAL = 1000;
+    int LOCATION_DEFAULT_INTERVAL = 1000;
+    int FASTEST_DEFAULT_LOCATION_INTERVAL = 1000;
 
     long MAX_TIME_FOR_WAITING_FCM_RESPONSE = 11000;
-    long MAX_TIME_FOR_WAITING_FCM_RESPONSE_LOCATION_CREATE = 11000;
+    long MAX_TIME_FOR_WAITING_FCM_RESPONSE_LOCATION_CREATE = 21000;
 
     int FCM_REQUEST_TYPE_SERVICE_STATUS = 1;
     int FCM_REQUEST_TYPE_SERVICE_START = 2;
@@ -52,6 +52,8 @@ public interface AppConstants {
     String KEY_DB_ENABLED = "savingToDatabaseEnabled";
     String KEY_SAVE_INTERVAL = "autoCheckedPositionSavingInterval";
     String KEY_TIME_UNIT = "timeUnit";
+    String KEY_LOCATIONS_INTERVAL = "locationsInterval";
+    String KEY_LOCATIONS_INTERVAL_TIME_UNIT = "locationsIntervalTimeUnit";
     String KEY_MAX_COUNT_LOC_SAVE = "maxCountOfLocationChecked";
     String KEY_MESSAGE = "message";
     String KEY_BATTERY = "battery";

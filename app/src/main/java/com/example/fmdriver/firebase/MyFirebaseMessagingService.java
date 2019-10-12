@@ -102,7 +102,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService impleme
                         case FCM_RESPONSE_GPS_STOP:
                             break;
                         case FCM_RESPONSE_TYPE_LOCATION:
-                            showNotification(DateTimeUtils.getDateTime(new Date()));
+                            //showNotification(DateTimeUtils.getDateTime(new Date()));
                             intent = new Intent(ACTION_LOCATION_BROADCAST);
                             intent.putExtra(KEY_DATA, remoteMessage);
                             intent.putExtra(KEY_BATTERY, data.get(KEY_BATTERY));
@@ -127,6 +127,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService impleme
                             intent.putExtra(KEY_SAVE_INTERVAL, data.get(KEY_SAVE_INTERVAL));
                             intent.putExtra(KEY_TIME_UNIT, data.get(KEY_TIME_UNIT));
                             intent.putExtra(KEY_MAX_COUNT_LOC_SAVE, data.get(KEY_MAX_COUNT_LOC_SAVE));
+                            intent.putExtra(KEY_LOCATIONS_INTERVAL, data.get(KEY_LOCATIONS_INTERVAL));
+                            intent.putExtra(KEY_LOCATIONS_INTERVAL_TIME_UNIT, data.get(KEY_LOCATIONS_INTERVAL_TIME_UNIT));
                             LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
                             break;
                         case FCM_RESPONSE_TYPE_MESSAGE:
