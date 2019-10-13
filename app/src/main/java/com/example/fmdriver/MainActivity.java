@@ -15,6 +15,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -86,16 +87,7 @@ public class MainActivity extends AppCompatActivity implements
     public static AppPrefs_ appPrefs;
 
     @ViewById
-    TextView btnMap,
-            btnToken,
-            btnCheckService,
-            btnStartStopService,
-            btnStartStopGps,
-            btnCheckGps,
-            btnSaveToDb,
-            btnShow,
-            btnAlarm,
-            btnCall,
+    TextView
             labelGpsStatus,
             labelServiceStatus,
             labelMessage,
@@ -104,6 +96,17 @@ public class MainActivity extends AppCompatActivity implements
             labelCountDownGps,
             labelLastGpsUpdatet,
             labelAddress;
+
+    @ViewById
+    ImageView imgMap,
+            imgToken,
+            imgCheckService,
+            imgStartStopService,
+            imgStartStopGps,
+            imgSettings,
+            imgShowData,
+            imgAlarm,
+            imgCall;
 
     @ViewById
     ProgressBar progressService, progressGps;
@@ -211,11 +214,11 @@ public class MainActivity extends AppCompatActivity implements
 
         if (serviceStatus == STARTED) {
             isServiceStarted = true;
-            btnStartStopService.setText("OFF");
+            imgStartStopService.setImageDrawable(getResources().getDrawable(R.drawable.ic_power_green));
             labelServiceStatus.setAlpha(ALPHA_VISIBILITY_VISIBLE);
         } else if (serviceStatus == STOPED) {
             isServiceStarted = false;
-            btnStartStopService.setText("ON");
+            imgStartStopService.setImageDrawable(getResources().getDrawable(R.drawable.ic_power));
             labelServiceStatus.setAlpha(ALPHA_VISIBILITY_GONE);
         } else {
             DialogInfo.createDialog(MainActivity.this)
@@ -226,11 +229,11 @@ public class MainActivity extends AppCompatActivity implements
 
         if (gpsStatus == STARTED) {
             isGpsStarted = true;
-            btnStartStopGps.setText("GPS OFF");
+            imgStartStopGps.setImageDrawable(getResources().getDrawable(R.drawable.ic_location_green));
             labelGpsStatus.setAlpha(ALPHA_VISIBILITY_VISIBLE);
         } else if (gpsStatus == STOPED) {
             isGpsStarted = false;
-            btnStartStopGps.setText("GPS ON");
+            imgStartStopGps.setImageDrawable(getResources().getDrawable(R.drawable.ic_location));
             labelGpsStatus.setAlpha(ALPHA_VISIBILITY_GONE);
         } else {
             DialogInfo.createDialog(MainActivity.this)
@@ -245,10 +248,10 @@ public class MainActivity extends AppCompatActivity implements
 
     }
 
-    @Click(R.id.btnMap)
+    @Click(R.id.imgMap)
     void clickBtnMap() {
         if (locationResultTimer != null) return;
-        Animators.animateButtonClick(btnMap);
+        Animators.animateButtonClick(imgMap);
         startCountDownGpsStart(false);
         sendRequestToFcm(FCM_REQUEST_TYPE_LOCATION, true, null);
 
@@ -265,69 +268,71 @@ public class MainActivity extends AppCompatActivity implements
         */
     }
 
-    @Click(R.id.btnToken)
+    @Click(R.id.imgToken)
     void clickBtnToken() {
-        Animators.animateButtonClick(btnToken);
+        Animators.animateButtonClick(imgToken);
         showFragmentToken(appPrefs.fcmToken().get());
     }
 
-    @Click(R.id.btnCheckService)
+    @Click(R.id.imgCheckService)
     void clickCheckService() {
         if (serviceTimer != null) return;
-        Animators.animateButtonClick(btnCheckService);
+        Animators.animateButtonClick(imgCheckService);
         startCountDownServiceConnect();
         sendRequestToFcm(FCM_REQUEST_TYPE_SERVICE_STATUS, false, null);
     }
 
-    @Click(R.id.btnStartStopService)
+    @Click(R.id.imgStartStopService)
     void clickStartStopService() {
         if (serviceTimer != null) return;
-        Animators.animateButtonClick(btnStartStopService);
+        Animators.animateButtonClick(imgStartStopService);
         startCountDownServiceConnect();
         sendRequestToFcm(isServiceStarted ? FCM_REQUEST_TYPE_SERVICE_STOP : FCM_REQUEST_TYPE_SERVICE_START, true, null);
     }
 
-    @Click(R.id.btnStartStopGps)
+    @Click(R.id.imgStartStopGps)
     void clickBtnStartStopGps() {
         if (gpsTimer != null) return;
-        Animators.animateButtonClick(btnStartStopGps);
+        Animators.animateButtonClick(imgStartStopGps);
         isRequestStartGps = true;
         startCountDownGpsStart(true);
         sendRequestToFcm(isGpsStarted ? FCM_REQUEST_TYPE_GPS_STOP : FCM_REQUEST_TYPE_GPS_START, true, null);
     }
 
+    /*
     @Click(R.id.btnCheckGps)
     void clickBtnCheckService() {
         Animators.animateButtonClick(btnCheckGps);
     }
+    */
 
-    @Click(R.id.btnSaveToDb)
+    @Click(R.id.imgSettings)
     void clickSaveToDb() {
-        Animators.animateButtonClick(btnSaveToDb);
+        Animators.animateButtonClick(imgSettings);
         showFragmentSaveToDb();
     }
 
-    @Click(R.id.btnShow)
+    @Click(R.id.imgShowData)
     void clickShowData() {
-        Animators.animateButtonClick(btnShow);
+        Animators.animateButtonClick(imgShowData);
         getAllCheckedPositions(null);
     }
 
-    @Click(R.id.btnAlarm)
+    @Click(R.id.imgAlarm)
     void clickBtnAlarm() {
         if (gpsTimer != null) return;
         if (serviceTimer != null) return;
 
-        Animators.animateButtonClick(btnAlarm);
+        Animators.animateButtonClick(imgAlarm);
         sendRequestToFcm(FCM_REQUEST_TYPE_ALARM, false, null);
     }
 
-    @Click(R.id.btnCall)
+    @Click(R.id.imgCall)
     void clickBtnCall() {
         if (gpsTimer != null) return;
         if (serviceTimer != null) return;
 
-        Animators.animateButtonClick(btnCall);
+        Animators.animateButtonClick(imgCall);
 
         DialogInput.createDialog(this)
                 .setTitle("Telefon")
@@ -642,14 +647,9 @@ public class MainActivity extends AppCompatActivity implements
                     labelCountDownService.setText("" + (MAX_TIME_FOR_WAITING_FCM_RESPONSE + 1000) / 1000);
                 if (labelCountDownService != null) labelCountDownService.setVisibility(View.GONE);
                 if (progressService != null) progressService.setVisibility(View.GONE);
-                if (btnCheckService != null)
-                    btnCheckService.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
-                if (btnStartStopService != null)
-                    btnStartStopService.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
+
                 serviceTimer = null;
                 serviceCountDownCounter = -1;
-
-                //sendRequestToFcm(FCM_REQUEST_TYPE_CANCEL, false);
                 isWaitingForResponseFromFcm = false;
 
                 if (isServiceStarted) labelServiceStatus.setAlpha(ALPHA_VISIBILITY_VISIBLE);
@@ -794,10 +794,6 @@ public class MainActivity extends AppCompatActivity implements
 
         if (labelCountDownService != null) labelCountDownService.setVisibility(View.GONE);
         if (progressService != null) progressService.setVisibility(View.GONE);
-        if (btnCheckService != null)
-            btnCheckService.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
-        if (btnStartStopService != null)
-            btnStartStopService.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
 
         serviceCountDownCounter = -1;
     }
@@ -810,8 +806,6 @@ public class MainActivity extends AppCompatActivity implements
 
         if (labelCountDownGps != null) labelCountDownGps.setVisibility(View.GONE);
         if (progressGps != null) progressGps.setVisibility(View.GONE);
-        if (btnMap != null)
-            btnMap.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
 
         gpsCountDownCounter = -1;
     }
@@ -837,7 +831,6 @@ public class MainActivity extends AppCompatActivity implements
 
         if (labelCountDownGps != null) labelCountDownGps.setVisibility(View.GONE);
         if (progressGps != null) progressGps.setVisibility(View.GONE);
-        if (btnMap != null) btnMap.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
         locationResultCountDownCounter = -1;
     }
 

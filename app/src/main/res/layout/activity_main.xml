@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -157,275 +158,193 @@
         android:text="Adresa"
         android:textColor="#FFC107" />
 
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+    <TableLayout
+        android:id="@+id/table"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_below="@id/labelAddress"
-        android:layout_marginTop="10dp">
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp">
 
-        <LinearLayout
+        <TableRow
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:layout_height="match_parent"
+            android:layout_marginBottom="10dp">
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="20dp"
-                android:layout_marginLeft="20dp"
-                android:layout_marginTop="10dp"
-                android:layout_marginEnd="20dp"
-                android:layout_marginRight="20dp"
-                android:orientation="horizontal"
-                android:weightSum="100">
+                android:layout_marginEnd="5dp"
+                android:layout_marginRight="5dp"
+                android:background="@drawable/bg_grid_item"
+                android:orientation="vertical"
+                android:padding="10dp">
 
-                <TextView
-                    android:id="@+id/btnStartStopService"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="5dp"
-                    android:layout_marginRight="5dp"
-                    android:layout_weight="50"
-                    android:background="@color/colorPrimary"
-                    android:gravity="center_horizontal"
-                    android:paddingLeft="10dp"
-                    android:paddingTop="13dp"
-                    android:paddingRight="10dp"
-                    android:paddingBottom="13dp"
-                    android:text="ON/OFF"
-                    android:textAllCaps="true"
-                    android:textColor="@android:color/white"
-                    android:textSize="18sp"
-                    android:textStyle="normal|bold" />
-
-                <TextView
-                    android:id="@+id/btnCheckService"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="5dp"
-                    android:layout_marginLeft="5dp"
-                    android:layout_weight="50"
-                    android:background="@color/colorPrimary"
-                    android:gravity="center_horizontal"
-                    android:paddingLeft="10dp"
-                    android:paddingTop="13dp"
-                    android:paddingRight="10dp"
-                    android:paddingBottom="13dp"
-                    android:text="Status"
-                    android:textAllCaps="true"
-                    android:textColor="@android:color/white"
-                    android:textSize="18sp"
-                    android:textStyle="normal|bold" />
+                <ImageView
+                    android:id="@+id/imgStartStopService"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    app:srcCompat="@drawable/ic_power" />
 
             </LinearLayout>
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="20dp"
-                android:layout_marginLeft="20dp"
-                android:layout_marginTop="10dp"
-                android:layout_marginEnd="20dp"
-                android:layout_marginRight="20dp"
-                android:orientation="horizontal"
-                android:weightSum="100">
+                android:layout_marginStart="5dp"
+                android:layout_marginLeft="5dp"
+                android:layout_marginEnd="5dp"
+                android:layout_marginRight="5dp"
+                android:background="@drawable/bg_grid_item"
+                android:orientation="vertical"
+                android:padding="10dp">
 
-                <TextView
-                    android:id="@+id/btnStartStopGps"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="5dp"
-                    android:layout_marginRight="5dp"
-                    android:layout_weight="50"
-                    android:background="@color/colorPrimary"
-                    android:gravity="center_horizontal"
-                    android:paddingLeft="10dp"
-                    android:paddingTop="13dp"
-                    android:paddingRight="10dp"
-                    android:paddingBottom="13dp"
-                    android:text="GPS ON/OFF"
-                    android:textAllCaps="true"
-                    android:textColor="@android:color/white"
-                    android:textSize="18sp"
-                    android:textStyle="normal|bold" />
-
-                <TextView
-                    android:id="@+id/btnCheckGps"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="5dp"
-                    android:layout_marginLeft="5dp"
-                    android:layout_weight="50"
-                    android:background="@color/colorPrimary"
-                    android:gravity="center_horizontal"
-                    android:paddingLeft="10dp"
-                    android:paddingTop="13dp"
-                    android:paddingRight="10dp"
-                    android:paddingBottom="13dp"
-                    android:text="GPS Status"
-                    android:textAllCaps="true"
-                    android:textColor="@android:color/white"
-                    android:textSize="18sp"
-                    android:textStyle="normal|bold" />
+                <ImageView
+                    android:id="@+id/imgCheckService"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    app:srcCompat="@drawable/ic_status" />
 
             </LinearLayout>
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="20dp"
-                android:layout_marginLeft="20dp"
-                android:layout_marginTop="10dp"
-                android:layout_marginEnd="20dp"
-                android:layout_marginRight="20dp"
-                android:orientation="horizontal"
-                android:weightSum="100">
+                android:layout_marginStart="5dp"
+                android:layout_marginLeft="5dp"
+                android:layout_marginEnd="5dp"
+                android:layout_marginRight="5dp"
+                android:background="@drawable/bg_grid_item"
+                android:orientation="vertical"
+                android:padding="10dp">
 
-                <TextView
-                    android:id="@+id/btnMap"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="5dp"
-                    android:layout_marginRight="5dp"
-                    android:layout_weight="50"
-                    android:background="@color/colorPrimary"
-                    android:gravity="center_horizontal"
-                    android:paddingLeft="10dp"
-                    android:paddingTop="13dp"
-                    android:paddingRight="10dp"
-                    android:paddingBottom="13dp"
-                    android:text="Mapa"
-                    android:textAllCaps="true"
-                    android:textColor="@android:color/white"
-                    android:textSize="18sp"
-                    android:textStyle="normal|bold" />
-
-                <TextView
-                    android:id="@+id/btnToken"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="5dp"
-                    android:layout_marginLeft="5dp"
-                    android:layout_weight="50"
-                    android:background="@color/colorPrimary"
-                    android:gravity="center_horizontal"
-                    android:paddingLeft="10dp"
-                    android:paddingTop="13dp"
-                    android:paddingRight="10dp"
-                    android:paddingBottom="13dp"
-                    android:text="Token"
-                    android:textAllCaps="true"
-                    android:textColor="@android:color/white"
-                    android:textSize="18sp"
-                    android:textStyle="normal|bold" />
+                <ImageView
+                    android:id="@+id/imgStartStopGps"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    app:srcCompat="@drawable/ic_location" />
 
             </LinearLayout>
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="20dp"
-                android:layout_marginLeft="20dp"
-                android:layout_marginTop="10dp"
-                android:layout_marginEnd="20dp"
-                android:layout_marginRight="20dp"
-                android:orientation="horizontal"
-                android:weightSum="100">
+                android:layout_marginLeft="5dp"
+                android:background="@drawable/bg_grid_item"
+                android:orientation="vertical"
+                android:padding="10dp">
 
-                <TextView
-                    android:id="@+id/btnSaveToDb"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="5dp"
-                    android:layout_marginRight="5dp"
-                    android:layout_weight="50"
-                    android:background="@color/colorPrimary"
-                    android:gravity="center_horizontal"
-                    android:paddingLeft="10dp"
-                    android:paddingTop="13dp"
-                    android:paddingRight="10dp"
-                    android:paddingBottom="13dp"
-                    android:text="Databáze"
-                    android:textAllCaps="true"
-                    android:textColor="@android:color/white"
-                    android:textSize="18sp"
-                    android:textStyle="normal|bold" />
+                <ImageView
+                    android:id="@+id/imgMap"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    app:srcCompat="@drawable/ic_map" />
 
-                <TextView
-                    android:id="@+id/btnShow"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="5dp"
-                    android:layout_marginLeft="5dp"
-                    android:layout_weight="50"
-                    android:background="@color/colorPrimary"
-                    android:gravity="center_horizontal"
-                    android:paddingLeft="10dp"
-                    android:paddingTop="13dp"
-                    android:paddingRight="10dp"
-                    android:paddingBottom="13dp"
-                    android:text="Uložená data"
-                    android:textAllCaps="true"
-                    android:textColor="@android:color/white"
-                    android:textSize="18sp"
-                    android:textStyle="normal|bold" />
+            </LinearLayout>
+
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginBottom="10dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="5dp"
+                android:layout_marginRight="5dp"
+                android:background="@drawable/bg_grid_item"
+                android:orientation="vertical"
+                android:padding="10dp">
+
+                <ImageView
+                    android:id="@+id/imgToken"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    app:srcCompat="@drawable/ic_fingerprint" />
 
             </LinearLayout>
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="20dp"
-                android:layout_marginLeft="20dp"
-                android:layout_marginTop="10dp"
-                android:layout_marginEnd="20dp"
-                android:layout_marginRight="20dp"
-                android:orientation="horizontal"
-                android:weightSum="100">
+                android:layout_marginStart="5dp"
+                android:layout_marginLeft="5dp"
+                android:layout_marginEnd="5dp"
+                android:background="@drawable/bg_grid_item"
+                android:orientation="vertical"
+                android:padding="10dp">
 
-                <TextView
-                    android:id="@+id/btnAlarm"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="5dp"
-                    android:layout_marginRight="5dp"
-                    android:layout_weight="50"
-                    android:background="@color/colorPrimary"
-                    android:gravity="center_horizontal"
-                    android:paddingLeft="10dp"
-                    android:paddingTop="13dp"
-                    android:paddingRight="10dp"
-                    android:paddingBottom="13dp"
-                    android:text="ALARM"
-                    android:textAllCaps="true"
-                    android:textColor="@android:color/white"
-                    android:textSize="18sp"
-                    android:textStyle="normal|bold" />
-
-                <TextView
-                    android:id="@+id/btnCall"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="5dp"
-                    android:layout_marginLeft="5dp"
-                    android:layout_weight="50"
-                    android:background="@color/colorPrimary"
-                    android:gravity="center_horizontal"
-                    android:paddingLeft="10dp"
-                    android:paddingTop="13dp"
-                    android:paddingRight="10dp"
-                    android:paddingBottom="13dp"
-                    android:text="Zavolej mi"
-                    android:textAllCaps="true"
-                    android:textColor="@android:color/white"
-                    android:textSize="18sp"
-                    android:textStyle="normal|bold" />
+                <ImageView
+                    android:id="@+id/imgSettings"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    app:srcCompat="@drawable/ic_settings" />
 
             </LinearLayout>
 
-        </LinearLayout>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:layout_marginLeft="5dp"
+                android:layout_marginEnd="5dp"
+                android:background="@drawable/bg_grid_item"
+                android:orientation="vertical"
+                android:padding="10dp">
 
-    </ScrollView>
+                <ImageView
+                    android:id="@+id/imgShowData"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    app:srcCompat="@drawable/ic_saved_data" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:layout_marginLeft="5dp"
+                android:background="@drawable/bg_grid_item"
+                android:orientation="vertical"
+                android:padding="10dp">
+
+                <ImageView
+                    android:id="@+id/imgAlarm"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    app:srcCompat="@drawable/ic_alarm" />
+
+            </LinearLayout>
+
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="5dp"
+                android:layout_marginRight="5dp"
+                android:background="@drawable/bg_grid_item"
+                android:orientation="vertical"
+                android:padding="10dp">
+
+                <ImageView
+                    android:id="@+id/imgCall"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    app:srcCompat="@drawable/ic_call" />
+
+            </LinearLayout>
+
+        </TableRow>
+
+    </TableLayout>
 
     <FrameLayout
         android:id="@+id/container"
