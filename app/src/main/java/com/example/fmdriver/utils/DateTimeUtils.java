@@ -102,6 +102,15 @@ public class DateTimeUtils {
         return sdf1.format(date);
     }
 
+    public static String getDateTimeDD_M_HH_MM_SS(Date date) {
+        if (date == null) {
+            return "???";
+        }
+
+        SimpleDateFormat sdf1 = new SimpleDateFormat("dd.M. - HH:mm:ss");
+        return sdf1.format(date);
+    }
+
     public static String getDateTime(long date) {
         SimpleDateFormat sdf1 = new SimpleDateFormat("dd.M.y (HH:mm:ss)");
         return sdf1.format(new Date(date));

@@ -13,12 +13,15 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.example.fmdriver.adapters.AdapterLog;
 import com.example.fmdriver.customViews.DialogInfo;
 import com.example.fmdriver.customViews.DialogInput;
 import com.example.fmdriver.fragments.FragmentCheckedPositionDetails;
@@ -40,6 +43,8 @@ import com.example.fmdriver.listeners.OnFragmentLoadClosedListener;
 import com.example.fmdriver.listeners.OnFragmentLoadShowedListener;
 import com.example.fmdriver.listeners.OnInputInsertedListener;
 import com.example.fmdriver.listeners.OnServiceStatusCheckedListener;
+import com.example.fmdriver.objects.AppLog;
+import com.example.fmdriver.objects.ItemLog;
 import com.example.fmdriver.objects.NewLocation;
 import com.example.fmdriver.objects.PositionChecked;
 import com.example.fmdriver.retrofit.ApiDatabase;
@@ -98,7 +103,8 @@ public class MainActivity extends AppCompatActivity implements
             labelAddress;
 
     @ViewById
-    ImageView imgMap,
+    ImageView imgBattery,
+            imgMap,
             imgToken,
             imgCheckService,
             imgStartStopService,
@@ -110,6 +116,9 @@ public class MainActivity extends AppCompatActivity implements
 
     @ViewById
     ProgressBar progressService, progressGps;
+
+    @ViewById
+    RecyclerView recyclerViewLog;
 
     public CountDownTimer serviceTimer, gpsTimer, settingsTimer, locationResultTimer;
 
@@ -146,6 +155,11 @@ public class MainActivity extends AppCompatActivity implements
     @InstanceState
     long locationResultCountDownCounter = -1;
 
+    @InstanceState
+    public AppLog appLog;
+
+    AdapterLog adapterLog;
+
 
     @AfterViews
     void afterViews() {
@@ -160,6 +174,8 @@ public class MainActivity extends AppCompatActivity implements
             labelCountDownGps.setVisibility(View.VISIBLE);
             progressGps.setVisibility(View.VISIBLE);
         }
+
+        initLog();
     }
 
     @Override
@@ -246,6 +262,27 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void callCanceled(int taskType) {
 
+    }
+
+    public void appendLog(String log, boolean show) {
+        Log.i(TAG, log);
+        if (show) updateAppLog(log);
+    }
+
+    private void initLog() {
+        if (this.appLog == null) this.appLog = new AppLog();
+        if (this.adapterLog == null) this.adapterLog = new AdapterLog(this);
+        recyclerViewLog.setAdapter(this.adapterLog);
+        recyclerViewLog.setLayoutManager(new LinearLayoutManager(this));
+        if (this.appLog.getItemsCount() > 0) recyclerViewLog.scrollToPosition(this.adapterLog.getItemCount() - 1);
+    }
+
+    public void updateAppLog(String log) {
+        if (this.adapterLog == null) initLog();
+        if (this.appLog == null) return;
+        this.appLog.addLog(log);
+        this.adapterLog.notifyDataSetChanged();
+        recyclerViewLog.scrollToPosition(this.adapterLog.getItemCount() - 1);
     }
 
     @Click(R.id.imgMap)
@@ -406,7 +443,8 @@ public class MainActivity extends AppCompatActivity implements
 
     public void sendRequestToFcm(int requestType, boolean blockMultiRequest, RequestToFcmData requestToFcmData) {
 
-        Log.i(TAG, "sendRequestToFcm()");
+        //Log.i(TAG, "sendRequestToFcm()");
+        appendLog("sendRequestToFcm: " + AppUtils.requestTypeToString(requestType), true);
 
         if (blockMultiRequest) {
             if (isWaitingForResponseFromFcm) {
@@ -436,9 +474,11 @@ public class MainActivity extends AppCompatActivity implements
         callFcm.enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, final Response<ResponseBody> response) {
-                Log.i(TAG, "response code: " + response.code());
+                //Log.i(TAG, "response code: " + response.code());
+                appendLog("response code: " + response.code(), true);
                 if (response.isSuccessful()) {
                     Log.i(TAG, "isSuccessful: TRUE");
+                    appendLog("...isSuccessful", true);
 
                     try {
                         Log.i(TAG, "response: " + response.body().string());
@@ -447,13 +487,14 @@ public class MainActivity extends AppCompatActivity implements
                         e.printStackTrace();
                     }
                 } else {
-                    Log.i(TAG, "isSuccessful: FALSE");
+                    //Log.i(TAG, "isSuccessful: FALSE");
 
                     closeFragmentLoad(new OnFragmentLoadClosedListener() {
                         @Override
                         public void onFragmentLoadClosed() {
                             try {
-                                Log.i(TAG, "response: " + response.errorBody().string());
+                                //Log.i(TAG, "response: " + response.errorBody().string());
+                                appendLog("...failure: " + response.errorBody().toString(), true);
 
                                 DialogInfo.createDialog(
                                         MainActivity.this)
@@ -857,7 +898,7 @@ public class MainActivity extends AppCompatActivity implements
                     return;
                 }
 
-                updateBatteryStatus(intent.getStringExtra(KEY_BATTERY));
+                updateBatteryStatus(intent.getStringExtra(KEY_BATTERY_PERCENTAGES), intent.getStringExtra(KEY_BATTERY_PLUGGED));
                 RemoteMessage remoteMessage = intent.getParcelableExtra(KEY_DATA);
 
                 if (remoteMessage != null) {
@@ -921,7 +962,7 @@ public class MainActivity extends AppCompatActivity implements
                 stopCountDownGpsConnect();
 
                 if (intent == null) return;
-                updateBatteryStatus(intent.getStringExtra(KEY_BATTERY));
+                updateBatteryStatus(intent.getStringExtra(KEY_BATTERY_PERCENTAGES), intent.getStringExtra(KEY_BATTERY_PLUGGED));
                 String responseServiceStatus = intent.getStringExtra(KEY_SERVICE_STATUS);
                 String responseGpsStatus = intent.getStringExtra(KEY_GPS_STATUS);
                 updateMessage(intent.getStringExtra(KEY_MESSAGE));
@@ -1101,11 +1142,23 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-    private void updateBatteryStatus(String status) {
-        if (status == null) labelBattery.setText("???");
-        if (status.equals("")) labelBattery.setText("???");
-        if (status.equals("0")) labelBattery.setText("???");
-        else labelBattery.setText("" + status + "%");
+    private void updateBatteryStatus(String batteryPercentages, String batteryPlugged) {
+        if (batteryPercentages == null) labelBattery.setText("???");
+        if (batteryPercentages.equals("")) labelBattery.setText("???");
+        if (batteryPercentages.equals("0")) labelBattery.setText("???");
+        else labelBattery.setText("" + batteryPercentages + "%");
+
+        int percentages = -1;
+        boolean plugged = !batteryPlugged.equals("0");
+
+        try {
+            percentages = (int) Float.parseFloat(batteryPercentages);
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+        }
+
+        imgBattery.setImageDrawable(getResources().getDrawable(AppUtils.getImageResForBattery(percentages, plugged)));
+
     }
 
     private void updateMessage(String message) {

@@ -5,6 +5,7 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.support.v4.app.FragmentManager;
 
+import com.example.fmdriver.R;
 import com.example.fmdriver.objects.MarkerPosition;
 import com.example.fmdriver.objects.Position;
 import com.example.fmdriver.objects.PositionChecked;
@@ -170,6 +171,35 @@ public class AppUtils implements AppConstants {
         for (Position p : items) {
             toReturn.add(new MarkerPosition(p.getLatitude(), p.getLongitude(), "" + counter));
             counter ++;
+        }
+
+        return toReturn;
+    }
+
+    public static int getImageResForBattery(int batteryPercentages, boolean batteryPlugged) {
+        int toReturn = R.drawable.ic_battery_unknown;
+
+        if (batteryPercentages <= 20) {
+            if (batteryPlugged) toReturn = R.drawable.ic_battery_charging_20;
+            else toReturn = R.drawable.ic_battery_20;
+        } else if (batteryPercentages > 20 && batteryPercentages <= 30) {
+            if (batteryPlugged) toReturn = R.drawable.ic_battery_charging_30;
+            else toReturn = R.drawable.ic_battery_30;
+        } else if (batteryPercentages > 30 && batteryPercentages <= 50) {
+            if (batteryPlugged) toReturn = R.drawable.ic_battery_charging_50;
+            else toReturn = R.drawable.ic_battery_50;
+        } else if (batteryPercentages > 50 && batteryPercentages <= 60) {
+            if (batteryPlugged) toReturn = R.drawable.ic_battery_charging_60;
+            else toReturn = R.drawable.ic_battery_60;
+        } else if (batteryPercentages > 60 && batteryPercentages <= 80) {
+            if (batteryPlugged) toReturn = R.drawable.ic_battery_charging_80;
+            else toReturn = R.drawable.ic_battery_80;
+        } else if (batteryPercentages > 80 && batteryPercentages <= 90) {
+            if (batteryPlugged) toReturn = R.drawable.ic_battery_charging_90;
+            else toReturn = R.drawable.ic_battery_90;
+        } else if (batteryPercentages > 90) {
+            if (batteryPlugged) toReturn = R.drawable.ic_battery_charging_100;
+            else toReturn = R.drawable.ic_battery_100;
         }
 
         return toReturn;

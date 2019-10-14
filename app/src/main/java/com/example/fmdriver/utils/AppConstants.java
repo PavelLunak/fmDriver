@@ -56,7 +56,8 @@ public interface AppConstants {
     String KEY_LOCATIONS_INTERVAL_TIME_UNIT = "locationsIntervalTimeUnit";
     String KEY_MAX_COUNT_LOC_SAVE = "maxCountOfLocationChecked";
     String KEY_MESSAGE = "message";
-    String KEY_BATTERY = "battery";
+    String KEY_BATTERY_PERCENTAGES = "batteryPercentages";
+    String KEY_BATTERY_PLUGGED = "batteryPlugged";
     String KEY_SERVICE_STATUS = "serviceStatus";
     String KEY_GPS_STATUS = "gpsStatus";
 

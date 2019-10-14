@@ -91,7 +91,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService impleme
                     switch (responseType) {
                         case FCM_RESPONSE_SERVICE_STATUS:
                             intent = new Intent(ACTION_SERVICE_STATUS_BROADCAST);
-                            intent.putExtra(KEY_BATTERY, data.get(KEY_BATTERY));
+                            intent.putExtra(KEY_BATTERY_PERCENTAGES, data.get(KEY_BATTERY_PERCENTAGES));
+                            intent.putExtra(KEY_BATTERY_PLUGGED, data.get(KEY_BATTERY_PLUGGED));
                             intent.putExtra(KEY_MESSAGE, data.get(KEY_MESSAGE));
                             intent.putExtra(KEY_SERVICE_STATUS, data.get(KEY_SERVICE_STATUS));
                             intent.putExtra(KEY_GPS_STATUS, data.get(KEY_GPS_STATUS));
@@ -105,7 +106,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService impleme
                             //showNotification(DateTimeUtils.getDateTime(new Date()));
                             intent = new Intent(ACTION_LOCATION_BROADCAST);
                             intent.putExtra(KEY_DATA, remoteMessage);
-                            intent.putExtra(KEY_BATTERY, data.get(KEY_BATTERY));
+                            intent.putExtra(KEY_BATTERY_PERCENTAGES, data.get(KEY_BATTERY_PERCENTAGES));
+                            intent.putExtra(KEY_BATTERY_PLUGGED, data.get(KEY_BATTERY_PLUGGED));
                             LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
                             break;
                         case FCM_RESPONSE_TYPE_SETTINGS_DATABASE_SAVED:

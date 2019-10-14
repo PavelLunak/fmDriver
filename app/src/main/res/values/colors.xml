@@ -5,4 +5,5 @@
     <color name="colorAccent">#D81B60</color>
     <color name="colorBtnDisabled">#756D6D</color>
     <color name="colorGray">#b9b9b9</color>
+    <color name="colorStatus">#FFC107</color>
 </resources>
