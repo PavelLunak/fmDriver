@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/colorDeviceOdd"
+    android:padding="5dp"
+    android:paddingRight="5dp">
+
+    <ImageView
+        android:id="@+id/imgItem"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        app:srcCompat="@drawable/ic_item" />
+
+    <TextView
+        android:id="@+id/labelDeviceName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginLeft="10dp"
+        android:layout_toRightOf="@id/imgItem"
+        android:text="TextView"
+        android:textColor="#ECECEC"
+        android:textSize="18sp" />
+
+    <TextView
+        android:id="@+id/labelDate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentBottom="true"
+        android:text="TextView"
+        android:textColor="#ECECEC"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/labelDeviceDescription"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/labelDeviceName"
+        android:layout_alignStart="@id/labelDeviceName"
+        android:layout_marginStart="10dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginEnd="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_toLeftOf="@id/labelDate"
+        android:text="TextView"
+        android:textColor="#FFDE7D"
+        android:textSize="12sp" />
+
+</RelativeLayout>

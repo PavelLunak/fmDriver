@@ -10,6 +10,18 @@ import android.view.animation.LinearInterpolator;
 
 public class Animators {
 
+    public static void animateStatusAfterStart(View view) {
+        ObjectAnimator objectAnimatorScaleX1 = ObjectAnimator.ofFloat(view, View.SCALE_X, 1f, 0f, 1f, 0f, 1f);
+        objectAnimatorScaleX1.setInterpolator(new LinearInterpolator());
+        objectAnimatorScaleX1.setRepeatMode(ObjectAnimator.REVERSE);
+
+        AnimatorSet animatorSet = new AnimatorSet();
+        animatorSet.setDuration(400);
+        animatorSet.playSequentially(objectAnimatorScaleX1);
+        animatorSet.setStartDelay(500);
+        animatorSet.start();
+    }
+
     public static void switchViews(final View v1, final View v2) {
 
         v2.setVisibility(View.VISIBLE);

@@ -10,9 +10,11 @@ import android.util.Log;
 
 import com.example.fmdriver.MainActivity;
 import com.example.fmdriver.R;
+import com.example.fmdriver.objects.DeviceIdentification;
 import com.example.fmdriver.utils.AppConstants;
 import com.example.fmdriver.utils.AppUtils;
 import com.example.fmdriver.utils.DateTimeUtils;
+import com.example.fmdriver.utils.PrefsUtils;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -39,6 +41,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService impleme
                 String newToken = instanceIdResult.getToken();
                 MainActivity.appPrefs.edit().fcmToken().put(newToken).apply();
                 Log.i(TAG, "new token: " + newToken);
+
+                DeviceIdentification di = AppUtils.getDeviceIdentification(MyFirebaseMessagingService.this);
+                Log.i(TAG_DB, "MyFirebaseMessagingService - onNewToken() - Android ID: " + di.getAndroidId());
+                Log.i(TAG_DB, "MyFirebaseMessagingService - onNewToken() - Device ID: " + di.getDeviceId());
+
+                PrefsUtils.updateAndroidId(MyFirebaseMessagingService.this, di.getAndroidId());
+                PrefsUtils.updateDeviceId(MyFirebaseMessagingService.this, di.getDeviceId());
             }
         });
     }
@@ -50,17 +59,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService impleme
         Log.i(TAG, "MyFirebaseMessagingService - onMessageReceived");
 
         if (remoteMessage != null) {
-            /*
-            Log.i(TAG, "MessageType: " + remoteMessage.getMessageType());
-            Log.i(TAG, "CollapseKey: " + remoteMessage.getCollapseKey());
-            Log.i(TAG, "From: " + remoteMessage.getFrom());
-            Log.i(TAG, "MessageId: " + remoteMessage.getMessageId());
-            Log.i(TAG, "To: " + remoteMessage.getTo());
-            Log.i(TAG, "Priority: " + remoteMessage.getPriority());
-            Log.i(TAG, "SentTime: " + DateTimeUtils.getDateTime(remoteMessage.getSentTime()));
-            Log.i(TAG, "Ttl: " + remoteMessage.getTtl() / 60);
-            */
-
             Map<String, String> data = remoteMessage.getData();
 
             if (data != null) {
@@ -103,7 +101,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService impleme
                         case FCM_RESPONSE_GPS_STOP:
                             break;
                         case FCM_RESPONSE_TYPE_LOCATION:
-                            //showNotification(DateTimeUtils.getDateTime(new Date()));
                             intent = new Intent(ACTION_LOCATION_BROADCAST);
                             intent.putExtra(KEY_DATA, remoteMessage);
                             intent.putExtra(KEY_BATTERY_PERCENTAGES, data.get(KEY_BATTERY_PERCENTAGES));
@@ -136,6 +133,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService impleme
                         case FCM_RESPONSE_TYPE_MESSAGE:
                             intent = new Intent(ACTION_SHOW_MESSAGE);
                             intent.putExtra(KEY_MESSAGE, data.get(KEY_MESSAGE));
+                            intent.putExtra(KEY_ACTION_MESSAGE_CODE, data.get(KEY_ACTION_MESSAGE_CODE));
                             LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
                             break;
                     }

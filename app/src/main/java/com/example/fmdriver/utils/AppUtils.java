@@ -1,11 +1,19 @@
 package com.example.fmdriver.utils;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
+import android.provider.Settings;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentManager;
+import android.telephony.TelephonyManager;
 
+import com.example.fmdriver.MainActivity;
 import com.example.fmdriver.R;
+import com.example.fmdriver.customViews.DialogInfo;
+import com.example.fmdriver.objects.DeviceIdentification;
 import com.example.fmdriver.objects.MarkerPosition;
 import com.example.fmdriver.objects.Position;
 import com.example.fmdriver.objects.PositionChecked;
@@ -50,7 +58,8 @@ public class AppUtils implements AppConstants {
                 return "FCM_RESPONSE_TYPE_MESSAGE";
             case FCM_RESPONSE_SERVICE_STATUS:
                 return "FCM_RESPONSE_SERVICE_STATUS";
-            default: return "unknown";
+            default:
+                return "unknown";
         }
     }
 
@@ -76,7 +85,8 @@ public class AppUtils implements AppConstants {
                 return "FCM_REQUEST_TYPE_ALARM";
             case FCM_REQUEST_TYPE_CALL:
                 return "FCM_REQUEST_TYPE_CALL";
-            default: return "unknown";
+            default:
+                return "unknown";
         }
     }
 
@@ -148,7 +158,7 @@ public class AppUtils implements AppConstants {
 
 
             toReturn.add(new MarkerPosition(p.getLatitude(), p.getLongitude(), "" + counter, sb.toString()));
-            counter ++;
+            counter++;
         }
 
         return toReturn;
@@ -170,7 +180,7 @@ public class AppUtils implements AppConstants {
 
         for (Position p : items) {
             toReturn.add(new MarkerPosition(p.getLatitude(), p.getLongitude(), "" + counter));
-            counter ++;
+            counter++;
         }
 
         return toReturn;
@@ -179,7 +189,7 @@ public class AppUtils implements AppConstants {
     public static int getImageResForBattery(int batteryPercentages, boolean batteryPlugged) {
         int toReturn = R.drawable.ic_battery_unknown;
 
-        if (batteryPercentages <= 20) {
+        if (batteryPercentages >= 0 && batteryPercentages <= 20) {
             if (batteryPlugged) toReturn = R.drawable.ic_battery_charging_20;
             else toReturn = R.drawable.ic_battery_20;
         } else if (batteryPercentages > 20 && batteryPercentages <= 30) {
@@ -203,5 +213,36 @@ public class AppUtils implements AppConstants {
         }
 
         return toReturn;
+    }
+
+    public static void showRequestTimerError(MainActivity activity) {
+        DialogInfo.createDialog(activity)
+                .setTitle("Chyba")
+                .setMessage("Nepodařilo se zpravovat požadavek v nastaveném časovém limitu")
+                .show();
+    }
+
+    public static DeviceIdentification getDeviceIdentification(Context context) {
+        String androidId = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
+        String deviceId = "";
+
+        TelephonyManager telephonyManager;
+        telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
+            /*
+             * getDeviceId() returns the unique device ID.
+             * For example,the IMEI for GSM and the MEID or ESN for CDMA phones.
+             */
+            deviceId = telephonyManager.getDeviceId();
+
+            /*
+             * getSubscriberId() returns the unique subscriber ID,
+             * For example, the IMSI for a GSM phone.
+             */
+            String subscriberId = telephonyManager.getSubscriberId();
+        }
+
+        return new DeviceIdentification(androidId, deviceId);
     }
 }

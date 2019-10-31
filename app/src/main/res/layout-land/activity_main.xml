@@ -1,410 +1,455 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/black">
+
+    <RelativeLayout
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:background="@drawable/bg_toolbar">
+
+        <TextView
+            android:id="@+id/labelToolbar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="5dp"
+            android:layout_marginTop="5dp"
+            android:layout_marginEnd="5dp"
+            android:layout_marginBottom="5dp"
+            android:text="fmDriver"
+            android:textColor="@color/colorDeviceSpinnerItemBg" />
+
+        <TextView
+            android:id="@+id/labelToolbarDevice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/labelToolbar"
+            android:layout_centerHorizontal="true"
+            android:text="TextView"
+            android:textColor="#6DFF88"
+            android:textSize="20sp" />
+
+    </RelativeLayout>
+
+    <View
+        android:id="@+id/toolbarDivider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_below="@id/toolbar"
+        android:layout_marginStart="10dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginEnd="10dp"
+        android:layout_marginRight="10dp"
+        android:background="#000000" />
 
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_below="@id/toolbar"
         android:orientation="horizontal"
         android:weightSum="100">
 
-        <ScrollView
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="50">
 
-            <RelativeLayout
+            <ScrollView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="50">
 
                 <RelativeLayout
-                    android:id="@+id/layoutStatus"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_centerHorizontal="true">
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_weight="50">
 
-                    <TableRow
+                    <RelativeLayout
+                        android:id="@+id/layoutStatus"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content">
+                        android:layout_height="wrap_content"
+                        android:layout_centerHorizontal="true">
 
-                        <RelativeLayout
-                            android:id="@+id/layoutStatusBattery"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center_horizontal|center_vertical">
-
-                            <ImageView
-                                android:id="@+id/imgBattery"
-                                android:layout_width="40dp"
-                                android:layout_height="40dp"
-                                app:srcCompat="@drawable/ic_battery_unknown" />
-
-                            <TextView
-                                android:id="@+id/labelBattery"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_below="@id/imgBattery"
-                                android:layout_centerHorizontal="true"
-                                android:text="0%"
-                                android:textColor="@color/colorStatus"
-                                android:textSize="10sp" />
-
-                        </RelativeLayout>
-
-                        <RelativeLayout
-                            android:id="@+id/layoutStatusService"
+                        <TableRow
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content">
 
-                            <ProgressBar
-                                android:id="@+id/progressService"
-                                style="?android:attr/progressBarStyle"
+                            <RelativeLayout
+                                android:id="@+id/layoutStatusBattery"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_alignStart="@id/labelServiceStatus"
-                                android:layout_alignLeft="@id/labelServiceStatus"
-                                android:layout_alignTop="@id/labelServiceStatus"
-                                android:layout_alignEnd="@id/labelServiceStatus"
-                                android:layout_alignRight="@id/labelServiceStatus"
-                                android:layout_alignBottom="@id/labelServiceStatus"
-                                android:visibility="gone" />
+                                android:layout_gravity="center_horizontal|center_vertical">
 
-                            <TextView
-                                android:id="@+id/labelCountDownService"
+                                <ImageView
+                                    android:id="@+id/imgBattery"
+                                    android:layout_width="40dp"
+                                    android:layout_height="40dp"
+                                    app:srcCompat="@drawable/ic_battery_unknown" />
+
+                                <TextView
+                                    android:id="@+id/labelBattery"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_below="@id/imgBattery"
+                                    android:layout_centerHorizontal="true"
+                                    android:text="0%"
+                                    android:textColor="@color/colorStatus"
+                                    android:textSize="10sp" />
+
+                            </RelativeLayout>
+
+                            <RelativeLayout
+                                android:id="@+id/layoutStatusService"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content">
+
+                                <ProgressBar
+                                    android:id="@+id/progressService"
+                                    style="?android:attr/progressBarStyle"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_alignStart="@id/labelServiceStatus"
+                                    android:layout_alignLeft="@id/labelServiceStatus"
+                                    android:layout_alignTop="@id/labelServiceStatus"
+                                    android:layout_alignEnd="@id/labelServiceStatus"
+                                    android:layout_alignRight="@id/labelServiceStatus"
+                                    android:layout_alignBottom="@id/labelServiceStatus"
+                                    android:visibility="gone" />
+
+                                <TextView
+                                    android:id="@+id/labelCountDownService"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_alignStart="@id/labelServiceStatus"
+                                    android:layout_alignLeft="@id/labelServiceStatus"
+                                    android:layout_alignTop="@id/labelServiceStatus"
+                                    android:layout_alignEnd="@id/labelServiceStatus"
+                                    android:layout_alignRight="@id/labelServiceStatus"
+                                    android:layout_alignBottom="@id/labelServiceStatus"
+                                    android:gravity="center_horizontal|center_vertical"
+                                    android:text="30"
+                                    android:textColor="#FFC107"
+                                    android:textSize="18sp"
+                                    android:visibility="gone" />
+
+                                <TextView
+                                    android:id="@+id/labelServiceStatus"
+                                    android:layout_width="50dp"
+                                    android:layout_height="50dp"
+                                    android:layout_marginStart="10dp"
+                                    android:layout_marginTop="10dp"
+                                    android:layout_marginEnd="10dp"
+                                    android:layout_marginBottom="10dp"
+                                    android:alpha="0.15"
+                                    android:background="@drawable/bg_label_service_info"
+                                    android:gravity="center_horizontal|center_vertical"
+                                    android:text="Service"
+                                    android:textColor="#FFC107"
+                                    android:textSize="10sp"
+                                    android:textStyle="bold" />
+
+                            </RelativeLayout>
+
+                            <RelativeLayout
+                                android:id="@+id/layoutStatusGps"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content">
+
+                                <ProgressBar
+                                    android:id="@+id/progressGps"
+                                    style="?android:attr/progressBarStyle"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_alignStart="@id/labelGpsStatus"
+                                    android:layout_alignLeft="@id/labelGpsStatus"
+                                    android:layout_alignTop="@id/labelGpsStatus"
+                                    android:layout_alignEnd="@id/labelGpsStatus"
+                                    android:layout_alignRight="@id/labelGpsStatus"
+                                    android:layout_alignBottom="@id/labelGpsStatus"
+                                    android:visibility="gone" />
+
+                                <TextView
+                                    android:id="@+id/labelCountDownGps"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_alignStart="@id/labelGpsStatus"
+                                    android:layout_alignLeft="@id/labelGpsStatus"
+                                    android:layout_alignTop="@id/labelGpsStatus"
+                                    android:layout_alignEnd="@id/labelGpsStatus"
+                                    android:layout_alignRight="@id/labelGpsStatus"
+                                    android:layout_alignBottom="@id/labelGpsStatus"
+                                    android:gravity="center_horizontal|center_vertical"
+                                    android:text="30"
+                                    android:textColor="#FFC107"
+                                    android:textSize="18sp"
+                                    android:visibility="gone" />
+
+                                <TextView
+                                    android:id="@+id/labelGpsStatus"
+                                    android:layout_width="50dp"
+                                    android:layout_height="50dp"
+                                    android:layout_marginStart="10dp"
+                                    android:layout_marginTop="10dp"
+                                    android:layout_marginEnd="10dp"
+                                    android:layout_marginBottom="10dp"
+                                    android:alpha="0.15"
+                                    android:background="@drawable/bg_label_service_info"
+                                    android:gravity="center_horizontal|center_vertical"
+                                    android:text="GPS"
+                                    android:textColor="#FFC107"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold" />
+
+                            </RelativeLayout>
+
+                        </TableRow>
+
+                    </RelativeLayout>
+
+                    <TableLayout
+                        android:id="@+id/table"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_below="@id/labelAddress"
+                        android:layout_centerHorizontal="true"
+                        android:layout_marginTop="20dp">
+
+                        <TableRow
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_marginBottom="10dp">
+
+                            <LinearLayout
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_alignStart="@id/labelServiceStatus"
-                                android:layout_alignLeft="@id/labelServiceStatus"
-                                android:layout_alignTop="@id/labelServiceStatus"
-                                android:layout_alignEnd="@id/labelServiceStatus"
-                                android:layout_alignRight="@id/labelServiceStatus"
-                                android:layout_alignBottom="@id/labelServiceStatus"
-                                android:gravity="center_horizontal|center_vertical"
-                                android:text="30"
-                                android:textColor="#FFC107"
-                                android:textSize="18sp"
-                                android:visibility="gone" />
+                                android:layout_marginEnd="5dp"
+                                android:layout_marginRight="5dp"
+                                android:background="@drawable/bg_grid_item"
+                                android:orientation="vertical"
+                                android:padding="10dp">
 
-                            <TextView
-                                android:id="@+id/labelServiceStatus"
-                                android:layout_width="50dp"
-                                android:layout_height="50dp"
-                                android:layout_marginStart="10dp"
-                                android:layout_marginTop="10dp"
-                                android:layout_marginEnd="10dp"
-                                android:layout_marginBottom="10dp"
-                                android:alpha="0.15"
-                                android:background="@drawable/bg_label_service_info"
-                                android:gravity="center_horizontal|center_vertical"
-                                android:text="Service"
-                                android:textColor="#FFC107"
-                                android:textSize="10sp"
-                                android:textStyle="bold" />
+                                <ImageView
+                                    android:id="@+id/imgStartStopService"
+                                    android:layout_width="30dp"
+                                    android:layout_height="30dp"
+                                    app:srcCompat="@drawable/ic_power" />
 
-                        </RelativeLayout>
+                            </LinearLayout>
 
-                        <RelativeLayout
-                            android:id="@+id/layoutStatusGps"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content">
-
-                            <ProgressBar
-                                android:id="@+id/progressGps"
-                                style="?android:attr/progressBarStyle"
+                            <LinearLayout
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_alignStart="@id/labelGpsStatus"
-                                android:layout_alignLeft="@id/labelGpsStatus"
-                                android:layout_alignTop="@id/labelGpsStatus"
-                                android:layout_alignEnd="@id/labelGpsStatus"
-                                android:layout_alignRight="@id/labelGpsStatus"
-                                android:layout_alignBottom="@id/labelGpsStatus"
-                                android:visibility="gone" />
+                                android:layout_marginStart="5dp"
+                                android:layout_marginLeft="5dp"
+                                android:layout_marginEnd="5dp"
+                                android:layout_marginRight="5dp"
+                                android:background="@drawable/bg_grid_item"
+                                android:orientation="vertical"
+                                android:padding="10dp">
 
-                            <TextView
-                                android:id="@+id/labelCountDownGps"
+                                <ImageView
+                                    android:id="@+id/imgCheckService"
+                                    android:layout_width="30dp"
+                                    android:layout_height="30dp"
+                                    app:srcCompat="@drawable/ic_status" />
+
+                            </LinearLayout>
+
+                            <LinearLayout
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_alignStart="@id/labelGpsStatus"
-                                android:layout_alignLeft="@id/labelGpsStatus"
-                                android:layout_alignTop="@id/labelGpsStatus"
-                                android:layout_alignEnd="@id/labelGpsStatus"
-                                android:layout_alignRight="@id/labelGpsStatus"
-                                android:layout_alignBottom="@id/labelGpsStatus"
-                                android:gravity="center_horizontal|center_vertical"
-                                android:text="30"
-                                android:textColor="#FFC107"
-                                android:textSize="18sp"
-                                android:visibility="gone" />
+                                android:layout_marginStart="5dp"
+                                android:layout_marginLeft="5dp"
+                                android:layout_marginEnd="5dp"
+                                android:layout_marginRight="5dp"
+                                android:background="@drawable/bg_grid_item"
+                                android:orientation="vertical"
+                                android:padding="10dp">
 
-                            <TextView
-                                android:id="@+id/labelGpsStatus"
-                                android:layout_width="50dp"
-                                android:layout_height="50dp"
-                                android:layout_marginStart="10dp"
-                                android:layout_marginTop="10dp"
-                                android:layout_marginEnd="10dp"
-                                android:layout_marginBottom="10dp"
-                                android:alpha="0.15"
-                                android:background="@drawable/bg_label_service_info"
-                                android:gravity="center_horizontal|center_vertical"
-                                android:text="GPS"
-                                android:textColor="#FFC107"
-                                android:textSize="16sp"
-                                android:textStyle="bold" />
+                                <ImageView
+                                    android:id="@+id/imgStartStopGps"
+                                    android:layout_width="30dp"
+                                    android:layout_height="30dp"
+                                    app:srcCompat="@drawable/ic_location" />
 
-                        </RelativeLayout>
+                            </LinearLayout>
 
-                    </TableRow>
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginLeft="5dp"
+                                android:background="@drawable/bg_grid_item"
+                                android:orientation="vertical"
+                                android:padding="10dp">
+
+                                <ImageView
+                                    android:id="@+id/imgMap"
+                                    android:layout_width="30dp"
+                                    android:layout_height="30dp"
+                                    app:srcCompat="@drawable/ic_map" />
+
+                            </LinearLayout>
+
+                        </TableRow>
+
+                        <TableRow
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_marginBottom="10dp">
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="5dp"
+                                android:layout_marginRight="5dp"
+                                android:background="@drawable/bg_grid_item"
+                                android:orientation="vertical"
+                                android:padding="10dp">
+
+                                <ImageView
+                                    android:id="@+id/imgToken"
+                                    android:layout_width="30dp"
+                                    android:layout_height="30dp"
+                                    app:srcCompat="@drawable/ic_fingerprint" />
+
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="5dp"
+                                android:layout_marginLeft="5dp"
+                                android:layout_marginEnd="5dp"
+                                android:background="@drawable/bg_grid_item"
+                                android:orientation="vertical"
+                                android:padding="10dp">
+
+                                <ImageView
+                                    android:id="@+id/imgSettings"
+                                    android:layout_width="30dp"
+                                    android:layout_height="30dp"
+                                    app:srcCompat="@drawable/ic_settings" />
+
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="5dp"
+                                android:layout_marginLeft="5dp"
+                                android:layout_marginEnd="5dp"
+                                android:background="@drawable/bg_grid_item"
+                                android:orientation="vertical"
+                                android:padding="10dp">
+
+                                <ImageView
+                                    android:id="@+id/imgShowData"
+                                    android:layout_width="30dp"
+                                    android:layout_height="30dp"
+                                    app:srcCompat="@drawable/ic_saved_data" />
+
+                            </LinearLayout>
+
+                            <RelativeLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="5dp"
+                                android:layout_marginLeft="5dp"
+                                android:background="@drawable/bg_grid_item"
+                                android:padding="10dp">
+
+                                <ImageView
+                                    android:id="@+id/imgAlarm"
+                                    android:layout_width="30dp"
+                                    android:layout_height="30dp"
+                                    app:srcCompat="@drawable/ic_alarm" />
+
+                                <ProgressBar
+                                    android:id="@+id/progressAlarm"
+                                    style="?android:attr/progressBarStyle"
+                                    android:layout_width="30dp"
+                                    android:layout_height="30dp"
+                                    android:visibility="gone" />
+
+                            </RelativeLayout>
+
+                        </TableRow>
+
+                        <TableRow
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent">
+
+                            <RelativeLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="5dp"
+                                android:layout_marginRight="5dp"
+                                android:background="@drawable/bg_grid_item"
+                                android:padding="10dp">
+
+                                <ImageView
+                                    android:id="@+id/imgCall"
+                                    android:layout_width="30dp"
+                                    android:layout_height="30dp"
+                                    app:srcCompat="@drawable/ic_call" />
+
+                                <ProgressBar
+                                    android:id="@+id/progressCall"
+                                    style="?android:attr/progressBarStyle"
+                                    android:layout_width="30dp"
+                                    android:layout_height="30dp"
+                                    android:visibility="gone" />
+
+                            </RelativeLayout>
+
+                        </TableRow>
+
+                    </TableLayout>
+
+                    <TextView
+                        android:id="@+id/labelLastGpsUpdated"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_below="@id/layoutStatus"
+                        android:layout_centerHorizontal="true"
+                        android:layout_marginStart="20dp"
+                        android:layout_marginLeft="20dp"
+                        android:layout_marginEnd="20dp"
+                        android:layout_marginRight="20dp"
+                        android:gravity="center_horizontal"
+                        android:text="Poslední aktualizace polohy"
+                        android:textColor="#FFC107" />
+
+                    <TextView
+                        android:id="@+id/labelAddress"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_below="@id/labelLastGpsUpdated"
+                        android:layout_centerHorizontal="true"
+                        android:layout_marginStart="20dp"
+                        android:layout_marginLeft="20dp"
+                        android:layout_marginEnd="20dp"
+                        android:layout_marginRight="20dp"
+                        android:gravity="center_horizontal"
+                        android:text="Adresa"
+                        android:textColor="#FFC107" />
 
                 </RelativeLayout>
 
-                <TextView
-                    android:id="@+id/labelMessage"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@id/layoutStatus"
-                    android:layout_centerHorizontal="true"
-                    android:layout_marginStart="20dp"
-                    android:layout_marginLeft="20dp"
-                    android:layout_marginEnd="20dp"
-                    android:layout_marginRight="20dp"
-                    android:gravity="center_horizontal"
-                    android:text="Zpráva"
-                    android:textColor="#FFC107" />
+            </ScrollView>
 
-                <TextView
-                    android:id="@+id/labelLastGpsUpdatet"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@id/labelMessage"
-                    android:layout_centerHorizontal="true"
-                    android:layout_marginStart="20dp"
-                    android:layout_marginLeft="20dp"
-                    android:layout_marginEnd="20dp"
-                    android:layout_marginRight="20dp"
-                    android:gravity="center_horizontal"
-                    android:text="Poslední aktualizace polohy"
-                    android:textColor="#FFC107" />
+            <FrameLayout
+                android:id="@+id/container"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
 
-                <TextView
-                    android:id="@+id/labelAddress"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@id/labelLastGpsUpdatet"
-                    android:layout_centerHorizontal="true"
-                    android:layout_marginStart="20dp"
-                    android:layout_marginLeft="20dp"
-                    android:layout_marginEnd="20dp"
-                    android:layout_marginRight="20dp"
-                    android:gravity="center_horizontal"
-                    android:text="Adresa"
-                    android:textColor="#FFC107" />
+            </FrameLayout>
 
-                <TableLayout
-                    android:id="@+id/table"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@id/labelAddress"
-                    android:layout_centerHorizontal="true"
-                    android:layout_marginTop="20dp">
-
-                    <TableRow
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:layout_marginBottom="10dp">
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="5dp"
-                            android:layout_marginRight="5dp"
-                            android:background="@drawable/bg_grid_item"
-                            android:orientation="vertical"
-                            android:padding="10dp">
-
-                            <ImageView
-                                android:id="@+id/imgStartStopService"
-                                android:layout_width="30dp"
-                                android:layout_height="30dp"
-                                app:srcCompat="@drawable/ic_power" />
-
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="5dp"
-                            android:layout_marginLeft="5dp"
-                            android:layout_marginEnd="5dp"
-                            android:layout_marginRight="5dp"
-                            android:background="@drawable/bg_grid_item"
-                            android:orientation="vertical"
-                            android:padding="10dp">
-
-                            <ImageView
-                                android:id="@+id/imgCheckService"
-                                android:layout_width="30dp"
-                                android:layout_height="30dp"
-                                app:srcCompat="@drawable/ic_status" />
-
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="5dp"
-                            android:layout_marginLeft="5dp"
-                            android:layout_marginEnd="5dp"
-                            android:layout_marginRight="5dp"
-                            android:background="@drawable/bg_grid_item"
-                            android:orientation="vertical"
-                            android:padding="10dp">
-
-                            <ImageView
-                                android:id="@+id/imgStartStopGps"
-                                android:layout_width="30dp"
-                                android:layout_height="30dp"
-                                app:srcCompat="@drawable/ic_location" />
-
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginLeft="5dp"
-                            android:background="@drawable/bg_grid_item"
-                            android:orientation="vertical"
-                            android:padding="10dp">
-
-                            <ImageView
-                                android:id="@+id/imgMap"
-                                android:layout_width="30dp"
-                                android:layout_height="30dp"
-                                app:srcCompat="@drawable/ic_map" />
-
-                        </LinearLayout>
-
-                    </TableRow>
-
-                    <TableRow
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:layout_marginBottom="10dp">
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="5dp"
-                            android:layout_marginRight="5dp"
-                            android:background="@drawable/bg_grid_item"
-                            android:orientation="vertical"
-                            android:padding="10dp">
-
-                            <ImageView
-                                android:id="@+id/imgToken"
-                                android:layout_width="30dp"
-                                android:layout_height="30dp"
-                                app:srcCompat="@drawable/ic_fingerprint" />
-
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="5dp"
-                            android:layout_marginLeft="5dp"
-                            android:layout_marginEnd="5dp"
-                            android:background="@drawable/bg_grid_item"
-                            android:orientation="vertical"
-                            android:padding="10dp">
-
-                            <ImageView
-                                android:id="@+id/imgSettings"
-                                android:layout_width="30dp"
-                                android:layout_height="30dp"
-                                app:srcCompat="@drawable/ic_settings" />
-
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="5dp"
-                            android:layout_marginLeft="5dp"
-                            android:layout_marginEnd="5dp"
-                            android:background="@drawable/bg_grid_item"
-                            android:orientation="vertical"
-                            android:padding="10dp">
-
-                            <ImageView
-                                android:id="@+id/imgShowData"
-                                android:layout_width="30dp"
-                                android:layout_height="30dp"
-                                app:srcCompat="@drawable/ic_saved_data" />
-
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="5dp"
-                            android:layout_marginLeft="5dp"
-                            android:background="@drawable/bg_grid_item"
-                            android:orientation="vertical"
-                            android:padding="10dp">
-
-                            <ImageView
-                                android:id="@+id/imgAlarm"
-                                android:layout_width="30dp"
-                                android:layout_height="30dp"
-                                app:srcCompat="@drawable/ic_alarm" />
-
-                        </LinearLayout>
-
-                    </TableRow>
-
-                    <TableRow
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent">
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="5dp"
-                            android:layout_marginRight="5dp"
-                            android:background="@drawable/bg_grid_item"
-                            android:orientation="vertical"
-                            android:padding="10dp">
-
-                            <ImageView
-                                android:id="@+id/imgCall"
-                                android:layout_width="30dp"
-                                android:layout_height="30dp"
-                                app:srcCompat="@drawable/ic_call" />
-
-                        </LinearLayout>
-
-                    </TableRow>
-
-                </TableLayout>
-
-                <FrameLayout
-                    android:id="@+id/container"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent">
-
-                </FrameLayout>
-
-            </RelativeLayout>
-
-        </ScrollView>
+        </RelativeLayout>
 
         <RelativeLayout
             android:layout_width="match_parent"

@@ -65,24 +65,24 @@ public class FragmentSaveToDb extends Fragment implements AppConstants {
 
     @AfterViews
     void afterViews() {
-        if (activity.settingsTimer != null) return;
+        if (activity.isWaitingForResponseFromFcm) return;
 
         activity.showFrgmentLoad("Stahuji nastavení", 0, new OnFragmentLoadShowedListener() {
             @Override
             public void onFragmentLoadShowed() {
-                activity.startCountDownSettings();
-                activity.sendRequestToFcm(FCM_REQUEST_TYPE_LOAD_SETTINGS, true, null);
+                activity.startTimerService(SERVICE_TIMER_TYPE_SETTINGS);
+                activity.sendRequestToFcm(FCM_REQUEST_TYPE_LOAD_SETTINGS, null);
             }
         });
     }
 
     @Click(R.id.btnLoadSettings)
     void clickStartLoad() {
-        if (activity.settingsTimer != null) return;
+        if (activity.isWaitingForResponseFromFcm) return;
         Animators.animateButtonClick(btnLoadSettings);
         updateViewsAfterLoadClick(false);
-        activity.startCountDownSettings();
-        activity.sendRequestToFcm(FCM_REQUEST_TYPE_LOAD_SETTINGS, true, null);
+        activity.startTimerService(AppConstants.SERVICE_TIMER_TYPE_SETTINGS);
+        activity.sendRequestToFcm(FCM_REQUEST_TYPE_LOAD_SETTINGS, null);
     }
 
     @Click(R.id.chbInfinity)
@@ -92,7 +92,7 @@ public class FragmentSaveToDb extends Fragment implements AppConstants {
 
     @Click(R.id.btnStartSave)
     void clickStartSave() {
-        if (activity.settingsTimer != null) return;
+        if (activity.isWaitingForResponseFromFcm) return;
         Animators.animateButtonClick(btnStartSave);
         updateViewsAfterSendClick(false);
 
@@ -155,8 +155,8 @@ public class FragmentSaveToDb extends Fragment implements AppConstants {
                 intervalPositons,
                 timeUnitPositons);
 
-        activity.startCountDownSettings();
-        activity.sendRequestToFcm(FCM_REQUEST_TYPE_SETTINGS_DATABASE, true, request);
+        activity.startTimerService(AppConstants.SERVICE_TIMER_TYPE_SETTINGS);
+        activity.sendRequestToFcm(FCM_REQUEST_TYPE_SETTINGS_DATABASE, request);
     }
 
     public void afterLoaded() {

@@ -4,6 +4,7 @@
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="@drawable/bg_checked_position_item"
     android:paddingTop="10dp">
 
     <ImageView
@@ -12,23 +13,34 @@
         android:layout_height="40dp"
         android:layout_alignParentRight="true"
         android:layout_centerVertical="true"
-        android:layout_marginEnd="10dp"
-        android:layout_marginLeft="10dp"
-        android:layout_marginRight="10dp"
         android:layout_marginStart="10dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginEnd="10dp"
+        android:layout_marginRight="10dp"
         android:clickable="true"
-        app:srcCompat="@drawable/ic_eye_black_24dp" />
+        app:srcCompat="@drawable/ic_eye_white" />
+
+    <RelativeLayout
+        android:id="@+id/clickLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignTop="@+id/labelPosItemIndex"
+        android:layout_alignBottom="@+id/labelPosItemDate"
+        android:layout_toLeftOf="@+id/imgShowOnMap">
+
+    </RelativeLayout>
 
     <TextView
         android:id="@+id/titlePosItemIndex"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="10dp"
-        android:layout_marginLeft="10dp"
-        android:layout_marginRight="10dp"
         android:layout_marginStart="10dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginEnd="10dp"
+        android:layout_marginRight="10dp"
         android:text="ID"
         android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textColor="@android:color/white"
         android:textSize="12sp" />
 
     <TextView
@@ -38,69 +50,76 @@
         android:layout_toRightOf="@+id/titlePosItemIndex"
         android:text="1"
         android:textAppearance="?android:attr/textAppearanceMedium"
-        android:textSize="16sp" />
+        android:textColor="@android:color/white"
+        android:textSize="12sp" />
 
     <TextView
         android:id="@+id/labelPosItemName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/titlePosItemIndex"
         android:layout_below="@+id/titlePosItemIndex"
+        android:layout_alignLeft="@+id/titlePosItemIndex"
         android:layout_marginTop="5dp"
         android:text="Název polohy"
         android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textColor="@android:color/white"
         android:textSize="24sp" />
 
     <TextView
         android:id="@+id/labelPosItemLat"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@id/labelPosItemName"
         android:layout_below="@id/labelPosItemName"
+        android:layout_alignLeft="@id/labelPosItemName"
         android:layout_marginTop="5dp"
         android:text="Lat: 49.574367"
         android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textColor="@android:color/white"
         android:textSize="14sp" />
 
     <TextView
         android:id="@+id/labelPosItemLong"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/labelPosItemLat"
         android:layout_below="@+id/labelPosItemLat"
+        android:layout_alignLeft="@+id/labelPosItemLat"
         android:text="Long: 17.174533"
         android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textColor="@android:color/white"
         android:textSize="14sp" />
 
     <TextView
         android:id="@+id/labelPosItemDate"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/labelPosItemLat"
         android:layout_below="@+id/labelPosItemLong"
+        android:layout_alignLeft="@+id/labelPosItemLat"
         android:text="Datum:"
         android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textColor="@android:color/white"
         android:textSize="14sp" />
 
     <TextView
         android:id="@+id/labelPosItemSpeed"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/labelPosItemLat"
         android:layout_below="@+id/labelPosItemDate"
+        android:layout_alignLeft="@+id/labelPosItemLat"
         android:text="Rychlost:"
         android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textColor="@android:color/white"
         android:textSize="14sp" />
 
     <TextView
         android:id="@+id/labelPosItemAccuracy"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/labelPosItemLat"
         android:layout_below="@+id/labelPosItemSpeed"
+        android:layout_alignLeft="@+id/labelPosItemLat"
         android:layout_marginBottom="10dp"
         android:text="Přesnost pologhy:"
         android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textColor="@android:color/white"
         android:textSize="14sp" />
 
     <View
@@ -109,16 +128,6 @@
         android:layout_height="1dp"
         android:layout_below="@+id/labelPosItemAccuracy"
         android:background="#b5b5b5" />
-
-    <RelativeLayout
-        android:id="@+id/clickLayout"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_alignBottom="@+id/labelPosItemDate"
-        android:layout_alignTop="@+id/labelPosItemIndex"
-        android:layout_toLeftOf="@+id/imgShowOnMap">
-
-    </RelativeLayout>
 
 </RelativeLayout>
 

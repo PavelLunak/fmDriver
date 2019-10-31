@@ -52,6 +52,8 @@ public class AdapterLog extends RecyclerView.Adapter<AdapterLog.MyViewHolder> im
 
         if (log.isMarked()) holder.label_log.setTextColor(Color.YELLOW);
         else holder.label_log.setTextColor(Color.GRAY);
+
+        if (log.getColorRes() != -1) holder.label_log.setTextColor(activity.getResources().getColor(log.getColorRes()));
     }
 
     @Override

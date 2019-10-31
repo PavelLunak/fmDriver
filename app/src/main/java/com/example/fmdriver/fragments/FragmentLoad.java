@@ -58,6 +58,12 @@ public class FragmentLoad extends Fragment {
         if (load_label != null) load_label.setText(labelText);
     }
 
+    public void updateLabel(String text) {
+        if (text == null) return;
+        this.labelText = text;
+        if (load_label != null) load_label.setText(this.labelText);
+    }
+
     @Click(R.id.btnCancel)
     void btnCancelClick() {
         if (cancelListener != null) cancelListener.callCanceled(taskType);

@@ -12,7 +12,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class ControllerDatabase {
 
     private static Retrofit retrofit;
-    static final String BASE_URL = "http://mrazenapizzaexpress.cz/GpsTracker/";
+    static final String BASE_URL = "http://stodva.cz/Fm/";
 
     public static Retrofit getRetrofitInstance() {
 

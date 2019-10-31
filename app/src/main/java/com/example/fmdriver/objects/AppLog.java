@@ -22,6 +22,14 @@ public class AppLog implements Parcelable {
         this.itemsLog.add(new ItemLog(log, true));
     }
 
+    public void addLog(String log, int colorRes) {
+        if (log == null) return;
+        if (log.trim().equals("")) return;
+
+        uncheckAll();
+        this.itemsLog.add(new ItemLog(log, true, colorRes));
+    }
+
     public ItemLog getItem(int position) {
         if (itemsLog == null) return null;
         return this.itemsLog.get(position);

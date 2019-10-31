@@ -4,10 +4,14 @@ import com.example.fmdriver.R;
 
 public interface AppConstants {
 
+    String PREFS_NAME = "MainActivity__AppPrefs";
+
     int animShowFragment = R.anim.anim_fragment_show;
     int animHideFragment = R.anim.anim_fragment_hide;
 
     String TAG = "log_tag";
+    String TAG_SERVICE = "log_tag_service";
+    String TAG_DB = "log_tag_db";
 
     int LOCATION_DEFAULT_INTERVAL = 1000;
     int FASTEST_DEFAULT_LOCATION_INTERVAL = 1000;
@@ -60,6 +64,15 @@ public interface AppConstants {
     String KEY_BATTERY_PLUGGED = "batteryPlugged";
     String KEY_SERVICE_STATUS = "serviceStatus";
     String KEY_GPS_STATUS = "gpsStatus";
+    String KEY_ACTION_MESSAGE_CODE = "actionCode";
+    String KEY_SERVICE_TIMER_TYPE = "timer_type";
+    String KEY_SERVICE_PROGRESS = "progress";
+
+    int ACTION_MESSAGE_CODE_NONE = 1000;
+    int ACTION_MESSAGE_CODE_ALARM_START = 1001;
+    int ACTION_MESSAGE_CODE_ALARM_STOP = 1002;
+    int ACTION_MESSAGE_CODE_CALL_REQUEST = 1003;
+    int ACTION_MESSAGE_CODE_CALL_ERROR = 1004;
 
     String ACTION_SERVICE_STATUS_BROADCAST = "action_service_status";
     String ACTION_LOCATION_BROADCAST = "action_location_receiver";
@@ -68,6 +81,19 @@ public interface AppConstants {
     String ACTION_DATABASE_SETTINGS_UPDATED = "action_db_settings_updated";
     String ACTION_DATABASE_SETTINGS_LOADED = "action_db_settings_loaded";
     String ACTION_SHOW_MESSAGE = "action_show_message";
+
+    String ACTION_SERVICE_PROGRESS = "action_service_progress";
+
+    int SERVICE_COUNTDOWN_IS_OFF = -1;
+    int SERVICE_COUNTDOWN_IS_OVER = -2;
+
+    int SERVICE_TIMER_TYPE_NONE = 200;
+    int SERVICE_TIMER_TYPE_SERVICE = 201;
+    int SERVICE_TIMER_TYPE_GPS = 202;
+    int SERVICE_TIMER_TYPE_SETTINGS = 203;
+    int SERVICE_TIMER_TYPE_LOCATION = 204;
+    int SERVICE_TIMER_TYPE_ALARM = 205;
+    int SERVICE_TIMER_TYPE_CALL = 206;
 
     int TIME_UNIT_SECONDS = 1;
     int TIME_UNIT_MINUTES = 2;

@@ -6,4 +6,11 @@
     <color name="colorBtnDisabled">#756D6D</color>
     <color name="colorGray">#b9b9b9</color>
     <color name="colorStatus">#FFC107</color>
+    <color name="colorMessageInLog">#FFB4AE</color>
+    <color name="colorMessageInLogWaitingForResponse">#36F4E4</color>
+    <color name="colorMessageInLogResponse">#44FF00</color>
+    <color name="colorDeviceSpinnerItemBg">#F1F1F1</color>
+    <color name="colorDeviceSpinnerCurrentItemBg">#C7F3FF</color>
+    <color name="colorDeviceOdd">#000000</color>
+    <color name="colorDeviceEven">#303030</color>
 </resources>

@@ -1,13 +1,21 @@
 package com.example.fmdriver;
 
+import android.app.ActivityManager;
 import android.arch.lifecycle.Lifecycle;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.location.Address;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.CountDownTimer;
+import android.os.IBinder;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
+import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.LocalBroadcastManager;
@@ -16,7 +24,9 @@ import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -24,10 +34,15 @@ import android.widget.TextView;
 import com.example.fmdriver.adapters.AdapterLog;
 import com.example.fmdriver.customViews.DialogInfo;
 import com.example.fmdriver.customViews.DialogInput;
+import com.example.fmdriver.customViews.DialogYesNo;
 import com.example.fmdriver.fragments.FragmentCheckedPositionDetails;
 import com.example.fmdriver.fragments.FragmentCheckedPositionDetails_;
 import com.example.fmdriver.fragments.FragmentCheckedPositions;
 import com.example.fmdriver.fragments.FragmentCheckedPositions_;
+import com.example.fmdriver.fragments.FragmentDeviceDetail;
+import com.example.fmdriver.fragments.FragmentDeviceDetail_;
+import com.example.fmdriver.fragments.FragmentDevices;
+import com.example.fmdriver.fragments.FragmentDevices_;
 import com.example.fmdriver.fragments.FragmentLoad;
 import com.example.fmdriver.fragments.FragmentLoad_;
 import com.example.fmdriver.fragments.FragmentMap;
@@ -42,9 +57,11 @@ import com.example.fmdriver.listeners.OnCallCanceledListener;
 import com.example.fmdriver.listeners.OnFragmentLoadClosedListener;
 import com.example.fmdriver.listeners.OnFragmentLoadShowedListener;
 import com.example.fmdriver.listeners.OnInputInsertedListener;
+import com.example.fmdriver.listeners.OnRegisteredDevicesLoadedListener;
 import com.example.fmdriver.listeners.OnServiceStatusCheckedListener;
+import com.example.fmdriver.listeners.OnYesNoDialogSelectedListener;
 import com.example.fmdriver.objects.AppLog;
-import com.example.fmdriver.objects.ItemLog;
+import com.example.fmdriver.objects.Device;
 import com.example.fmdriver.objects.NewLocation;
 import com.example.fmdriver.objects.PositionChecked;
 import com.example.fmdriver.retrofit.ApiDatabase;
@@ -55,8 +72,11 @@ import com.example.fmdriver.retrofit.objects.RequestToFcmCall;
 import com.example.fmdriver.retrofit.objects.RequestToFcmData;
 import com.example.fmdriver.retrofit.requests.RequestToFcm;
 import com.example.fmdriver.retrofit.responses.ResponseAllCheckedPositions;
+import com.example.fmdriver.retrofit.responses.ResponseAllDevices;
 import com.example.fmdriver.retrofit.responses.ResponseCheckedPosition;
 import com.example.fmdriver.retrofit.responses.ResponseDeletePosition;
+import com.example.fmdriver.retrofit.responses.ResponseDevice;
+import com.example.fmdriver.services.AppService;
 import com.example.fmdriver.utils.Animators;
 import com.example.fmdriver.utils.AppConstants;
 import com.example.fmdriver.utils.AppUtils;
@@ -95,12 +115,12 @@ public class MainActivity extends AppCompatActivity implements
     TextView
             labelGpsStatus,
             labelServiceStatus,
-            labelMessage,
             labelBattery,
             labelCountDownService,
             labelCountDownGps,
-            labelLastGpsUpdatet,
-            labelAddress;
+            labelLastGpsUpdated,
+            labelAddress,
+            labelToolbarDevice;
 
     @ViewById
     ImageView imgBattery,
@@ -115,15 +135,22 @@ public class MainActivity extends AppCompatActivity implements
             imgCall;
 
     @ViewById
-    ProgressBar progressService, progressGps;
+    ProgressBar progressService, progressGps, progressAlarm, progressCall;
 
     @ViewById
     RecyclerView recyclerViewLog;
 
-    public CountDownTimer serviceTimer, gpsTimer, settingsTimer, locationResultTimer;
+    @InstanceState
+    boolean isAfterStart;
 
     @InstanceState
-    boolean isWaitingForResponseFromFcm;
+    int batteryPercentages = -1;
+
+    @InstanceState
+    boolean batteryIsPlugged;
+
+    @InstanceState
+    public boolean isWaitingForResponseFromFcm, isRequestStopSevice;
 
     public FragmentManager fragmentManager;
 
@@ -131,102 +158,233 @@ public class MainActivity extends AppCompatActivity implements
     public boolean
             isServiceStarted,
             isGpsStarted,
+            isAlarmStarted,
             checkingServiceStatusInProgress,
-            isRequestStartGps;
+            isRequestLocation,
+            isRequestStopServiceAfterWork;
 
     @InstanceState
     public static ArrayList<PositionChecked> itemsCheckedPositions;
 
-    BroadcastReceiver locacionReceiver;
+    BroadcastReceiver locationReceiver;
     BroadcastReceiver serviceStatusCheckedReceiver;
     BroadcastReceiver databaseSettingsUpdatedReceiver;
     BroadcastReceiver databaseSettingsLoadedReceiver;
     BroadcastReceiver messageReceiver;
-
-    @InstanceState
-    long serviceCountDownCounter = -1;
-
-    @InstanceState
-    long gpsCountDownCounter = -1;
-
-    @InstanceState
-    long settingsCountDownCounter = -1;
-
-    @InstanceState
-    long locationResultCountDownCounter = -1;
+    BroadcastReceiver counterReceiver;
 
     @InstanceState
     public AppLog appLog;
 
-    AdapterLog adapterLog;
+    @InstanceState
+    ArrayList<Device> registeredDevices;
 
+    AdapterLog adapterLog;
+    AppService appService;
+
+    @InstanceState
+    int timerRequestType = SERVICE_TIMER_TYPE_NONE;
+
+    @InstanceState
+    boolean mBounded;
+
+    ServiceConnection mConnection = new ServiceConnection() {
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            Log.i(TAG_SERVICE, "MainActivity - onServiceConnected()");
+            mBounded = false;
+            appService = null;
+        }
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.i(TAG_SERVICE, "MainActivity - onServiceConnected()");
+
+            AppService.LocalBinderAppSevice mLocalBinder = (AppService.LocalBinderAppSevice) service;
+            appService = mLocalBinder.getService();
+            mBounded = true;
+
+            if (timerRequestType != SERVICE_TIMER_TYPE_NONE && !isWaitingForResponseFromFcm)
+                appService.start(timerRequestType);
+        }
+    };
+
+
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        isAfterStart = savedInstanceState == null;
+    }
 
     @AfterViews
     void afterViews() {
         fragmentManager = getSupportFragmentManager();
-        if (!checkingServiceStatusInProgress) checkServiceStatus();
 
-        if (serviceCountDownCounter != -1) {
-            labelCountDownService.setVisibility(View.VISIBLE);
-            progressService.setVisibility(View.VISIBLE);
-        }
-        if (gpsCountDownCounter != -1) {
-            labelCountDownGps.setVisibility(View.VISIBLE);
-            progressGps.setVisibility(View.VISIBLE);
+        if (isAfterStart) {
+            getRegisteredDevices(new OnRegisteredDevicesLoadedListener() {
+                @Override
+                public void onRegisteredDevicesLoaded() {
+                    int lastSelectedDevicePosition = getDevicePositionInListById(appPrefs.remoteDeviceId().getOr(-1));
+                    labelToolbarDevice.setText(registeredDevices.get(lastSelectedDevicePosition).getName());
+                    //if (!checkingServiceStatusInProgress) checkServiceStatus();
+                    Animators.animateStatusAfterStart(imgCheckService);
+                }
+            });
+        } else {
+            int lastSelectedDevicePosition = getDevicePositionInListById(appPrefs.remoteDeviceId().getOr(-1));
+            labelToolbarDevice.setText(registeredDevices.get(lastSelectedDevicePosition).getName());
+
+            if (isServiceStarted) {
+                labelServiceStatus.setAlpha(ALPHA_VISIBILITY_VISIBLE);
+                imgStartStopService.setImageDrawable(getResources().getDrawable(R.drawable.ic_power_green));
+            } else {
+                labelServiceStatus.setAlpha(ALPHA_VISIBILITY_GONE);
+                imgStartStopService.setImageDrawable(getResources().getDrawable(R.drawable.ic_power));
+            }
+
+            if (isGpsStarted) {
+                labelGpsStatus.setAlpha(ALPHA_VISIBILITY_VISIBLE);
+                imgStartStopGps.setImageDrawable(getResources().getDrawable(R.drawable.ic_location_green));
+            } else {
+                labelGpsStatus.setAlpha(ALPHA_VISIBILITY_GONE);
+                imgStartStopGps.setImageDrawable(getResources().getDrawable(R.drawable.ic_location));
+            }
+
+            if (isAlarmStarted) {
+                imgAlarm.setImageDrawable(getResources().getDrawable(R.drawable.ic_alarm_red));
+            } else {
+                imgAlarm.setImageDrawable(getResources().getDrawable(R.drawable.ic_alarm));
+            }
         }
 
+        updateBatteryStatus();
         initLog();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.i(TAG_SERVICE, "MainActivity - onPause()");
+        unbindTimerService();
+
+        unregisterServiceStatusCheckedReceiver();
+        unregisterLocationReceiver();
+        unregisterDatabaseSettingsUpdatedReceiver();
+        unregisterDatabaseSettingsLoadedReceiver();
+        unregisterMessageReceiver();
+        unregisterCounterReceiver();
+
+        unregisterLocationProvidersChangedStatusReceiver();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        Log.i(TAG_SERVICE, "MainActivity - onResume()");
         Log.i(TAG, appPrefs.fcmToken().get());
         registerServiceStatusCheckedReceiver();
         registerLocationReceiver();
         registerDatabaseSettingsUpdatedReceiver();
         registerDatabaseSettingsLoadedReceiver();
         registerMessageReceiver();
+        registerCounterReceiver();
 
+        bindTimerService();
         registerLocationProvidersChangedStatusReceiver();
-
         initStetho();
-
-        if (serviceCountDownCounter != -1) startCountDownServiceConnect();
-        //if (gpsCountDownCounter != -1) startCountDownGpsStart(isRequestStartGps);
-        if (locationResultCountDownCounter != -1) startCountDownLocationResult();
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
-        unregisterServiceStatusCheckedReceiver();
-        unregisterLocationReceiver();
-        unregisterDatabaseSettingsUpdatedReceiver();
-        unregisterDatabaseSettingsLoadedReceiver();
-        unregisterMessageReceiver();
-
-        unregisterLocationProvidersChangedStatusReceiver();
-
-        stopCountDownServiceConnect();
-        stopCountDownGpsConnect();
-        stopCountDownSettings();
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.i(TAG_SERVICE, "*****************  MainActivity - onDestroy() ***************** ");
     }
 
     @Override
     public void onBackPressed() {
+        Log.i(TAG_SERVICE, "MainActivity - onBackPressed()");
         if (AppUtils.isFragmentCurrent("FragmentLoad_", fragmentManager)) return;
+
+        int fragmentsInStack = fragmentManager.getBackStackEntryCount();
+
+        if (fragmentsInStack == 0) {
+            if (appService != null) appService.setRequestStopService();
+            else Log.i(TAG_SERVICE, "appService == null");
+        }
+
         super.onBackPressed();
+    }
+
+    @Click(R.id.labelToolbarDevice)
+    void clickLabelToolbarDevice() {
+        Animators.animateButtonClick(labelToolbarDevice);
+        showFragmentDevices();
+    }
+
+    public void startTimerService(int taskType) {
+        Log.i(TAG_SERVICE, "MainActivity - startService()");
+
+        this.timerRequestType = taskType;
+
+        if (!isMyServiceRunning(AppService.class)) {
+            appService = new AppService();
+            startService(new Intent(this, appService.getClass()));
+        }
+
+        if (!mBounded) {
+            Log.i(TAG_SERVICE, "MainActivity - startService() - mBounded == FALSE");
+            bindService(new Intent(this, AppService.class), mConnection, BIND_AUTO_CREATE);
+        } else {
+            Log.i(TAG_SERVICE, "MainActivity - startService() - mBounded == TRUE");
+            appService.start(timerRequestType);
+        }
+    }
+
+    public void bindTimerService() {
+        Log.i(TAG_SERVICE, "MainActivity - bindToTimerService()");
+        if (isMyServiceRunning(AppService.class)) {
+            if (!mBounded) {
+                Log.i(TAG_SERVICE, "MainActivity - bindToTimerService() - mBounded == FALSE");
+                bindService(new Intent(this, AppService.class), mConnection, BIND_AUTO_CREATE);
+            } else {
+                Log.i(TAG_SERVICE, "MainActivity - bindToTimerService() - mBounded == TRUE");
+            }
+        }
+    }
+
+    public void unbindTimerService() {
+        Log.i(TAG_SERVICE, "MainActivity - unbindTimerService()");
+
+        if (!mBounded) {
+            Log.i(TAG_SERVICE, "MainActivity - unbindTimerService() - mBounded == FALSE -> nelze odpojit");
+            Log.i(TAG_SERVICE, "MainActivity - unbindTimerService() - appService == null : " + (appService == null));
+            return;
+        }
+
+        try {
+            unbindService(mConnection);
+            mBounded = false;
+        } catch (IllegalArgumentException e) {
+            Log.i(TAG_SERVICE, "MainActivity - unbindTimerService(): unbindService -> IllegalArgumentException");
+            Log.i(TAG_SERVICE, e.getMessage());
+        }
+    }
+
+    public boolean isMyServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                Log.i(TAG_SERVICE, "MainActivity - isMyServiceRunning() - TRUE");
+                return true;
+            }
+        }
+        Log.i(TAG, "MyFirebaseMessagingService - isMyServiceRunning() - FALSE");
+        return false;
     }
 
     @Override
     public void onServiceStatusChecked(final int serviceStatus, final int gpsStatus) {
-        Log.i(TAG, "MainActivity - onServiceStatusChecked()");
-        Log.i(TAG, "MainActivity - onServiceStatusChecked() - serviceStatus: " + serviceStatus);
-        Log.i(TAG, "MainActivity - onServiceStatusChecked() - gpsStatus: " + gpsStatus);
-
         checkingServiceStatusInProgress = false;
-        //afterServiceStatusChanged(serviceStatus == STARTED);
 
         if (serviceStatus == STARTED) {
             isServiceStarted = true;
@@ -269,12 +427,18 @@ public class MainActivity extends AppCompatActivity implements
         if (show) updateAppLog(log);
     }
 
+    public void appendLog(String log, boolean show, int colorRes) {
+        Log.i(TAG, log);
+        if (show) updateAppLog(log, colorRes);
+    }
+
     private void initLog() {
         if (this.appLog == null) this.appLog = new AppLog();
         if (this.adapterLog == null) this.adapterLog = new AdapterLog(this);
         recyclerViewLog.setAdapter(this.adapterLog);
         recyclerViewLog.setLayoutManager(new LinearLayoutManager(this));
-        if (this.appLog.getItemsCount() > 0) recyclerViewLog.scrollToPosition(this.adapterLog.getItemCount() - 1);
+        if (this.appLog.getItemsCount() > 0)
+            recyclerViewLog.scrollToPosition(this.adapterLog.getItemCount() - 1);
     }
 
     public void updateAppLog(String log) {
@@ -285,24 +449,27 @@ public class MainActivity extends AppCompatActivity implements
         recyclerViewLog.scrollToPosition(this.adapterLog.getItemCount() - 1);
     }
 
+    public void updateAppLog(String log, int colorRes) {
+        if (this.adapterLog == null) initLog();
+        if (this.appLog == null) return;
+        this.appLog.addLog(log, colorRes);
+        this.adapterLog.notifyDataSetChanged();
+        recyclerViewLog.scrollToPosition(this.adapterLog.getItemCount() - 1);
+    }
+
     @Click(R.id.imgMap)
     void clickBtnMap() {
-        if (locationResultTimer != null) return;
-        Animators.animateButtonClick(imgMap);
-        startCountDownGpsStart(false);
-        sendRequestToFcm(FCM_REQUEST_TYPE_LOCATION, true, null);
+        isRequestLocation = true;
+        isRequestStopServiceAfterWork = !isServiceStarted;
 
-        /*
-        if (isGetPosition) {
-            labelGpsStatus.setAlpha(ALPHA_VISIBILITY_GONE);
-            isGetPosition = false;
-            sendRequestToFcm(FCM_REQUEST_TYPE_GPS_STOP, false);
-        } else {
-            labelGpsStatus.setAlpha(ALPHA_VISIBILITY_VISIBLE);
-            isGetPosition = true;
-            sendRequestToFcm(FCM_REQUEST_TYPE_GPS_START, false);
-        }
-        */
+        if (labelGpsStatus != null) labelGpsStatus.setAlpha(ALPHA_VISIBILITY_GONE);
+        if (labelCountDownGps != null) labelCountDownGps.setVisibility(View.VISIBLE);
+        if (progressGps != null) progressGps.setVisibility(View.VISIBLE);
+
+        if (isWaitingForResponseFromFcm) return;
+        Animators.animateButtonClick(imgMap);
+        startTimerService(SERVICE_TIMER_TYPE_LOCATION);
+        sendRequestToFcm(FCM_REQUEST_TYPE_LOCATION,null);
     }
 
     @Click(R.id.imgToken)
@@ -313,35 +480,39 @@ public class MainActivity extends AppCompatActivity implements
 
     @Click(R.id.imgCheckService)
     void clickCheckService() {
-        if (serviceTimer != null) return;
+        if (labelServiceStatus != null) labelServiceStatus.setAlpha(ALPHA_VISIBILITY_GONE);
+        if (labelCountDownService != null) labelCountDownService.setVisibility(View.VISIBLE);
+        if (progressService != null) progressService.setVisibility(View.VISIBLE);
+
+        if (isWaitingForResponseFromFcm) return;
         Animators.animateButtonClick(imgCheckService);
-        startCountDownServiceConnect();
-        sendRequestToFcm(FCM_REQUEST_TYPE_SERVICE_STATUS, false, null);
+        startTimerService(SERVICE_TIMER_TYPE_SERVICE);
+        sendRequestToFcm(FCM_REQUEST_TYPE_SERVICE_STATUS, null);
     }
 
     @Click(R.id.imgStartStopService)
     void clickStartStopService() {
-        if (serviceTimer != null) return;
+        if (labelServiceStatus != null) labelServiceStatus.setAlpha(ALPHA_VISIBILITY_GONE);
+        if (labelCountDownService != null) labelCountDownService.setVisibility(View.VISIBLE);
+        if (progressService != null) progressService.setVisibility(View.VISIBLE);
+
+        if (isWaitingForResponseFromFcm) return;
         Animators.animateButtonClick(imgStartStopService);
-        startCountDownServiceConnect();
-        sendRequestToFcm(isServiceStarted ? FCM_REQUEST_TYPE_SERVICE_STOP : FCM_REQUEST_TYPE_SERVICE_START, true, null);
+        startTimerService(SERVICE_TIMER_TYPE_SERVICE);
+        sendRequestToFcm(isServiceStarted ? FCM_REQUEST_TYPE_SERVICE_STOP : FCM_REQUEST_TYPE_SERVICE_START, null);
     }
 
     @Click(R.id.imgStartStopGps)
     void clickBtnStartStopGps() {
-        if (gpsTimer != null) return;
-        Animators.animateButtonClick(imgStartStopGps);
-        isRequestStartGps = true;
-        startCountDownGpsStart(true);
-        sendRequestToFcm(isGpsStarted ? FCM_REQUEST_TYPE_GPS_STOP : FCM_REQUEST_TYPE_GPS_START, true, null);
-    }
+        if (labelGpsStatus != null) labelGpsStatus.setAlpha(ALPHA_VISIBILITY_GONE);
+        if (labelCountDownGps != null) labelCountDownGps.setVisibility(View.VISIBLE);
+        if (progressGps != null) progressGps.setVisibility(View.VISIBLE);
 
-    /*
-    @Click(R.id.btnCheckGps)
-    void clickBtnCheckService() {
-        Animators.animateButtonClick(btnCheckGps);
+        if (isWaitingForResponseFromFcm) return;
+        Animators.animateButtonClick(imgStartStopGps);
+        startTimerService(SERVICE_TIMER_TYPE_GPS);
+        sendRequestToFcm(isGpsStarted ? FCM_REQUEST_TYPE_GPS_STOP : FCM_REQUEST_TYPE_GPS_START, null);
     }
-    */
 
     @Click(R.id.imgSettings)
     void clickSaveToDb() {
@@ -357,17 +528,53 @@ public class MainActivity extends AppCompatActivity implements
 
     @Click(R.id.imgAlarm)
     void clickBtnAlarm() {
-        if (gpsTimer != null) return;
-        if (serviceTimer != null) return;
-
         Animators.animateButtonClick(imgAlarm);
-        sendRequestToFcm(FCM_REQUEST_TYPE_ALARM, false, null);
+
+        if (isWaitingForResponseFromFcm || isAlarmStarted) {
+            appendLog(
+                    "Čekám na odpověď serveru. Do té doby není možné odesílat další požadavky",
+                    true,
+                    R.color.colorMessageInLogWaitingForResponse);
+            return;
+        }
+
+        if (isAlarmStarted) {
+            appendLog(
+                    "Dokud neskončí spuštěný alarm, není možné spustit další",
+                    true,
+                    R.color.colorMessageInLogWaitingForResponse);
+            return;
+        }
+
+        DialogYesNo.createDialog(this)
+                .setTitle("Alarm")
+                .setMessage("Chceš na vzdáleném zařízení přehrát alarm?")
+                .setListener(new OnYesNoDialogSelectedListener() {
+                    @Override
+                    public void onYesSelected() {
+                        Animators.animateButtonClick(imgAlarm);
+                        sendRequestToFcm(FCM_REQUEST_TYPE_ALARM, null);
+                        imgAlarm.setImageDrawable(MainActivity.this.getResources().getDrawable(R.drawable.ic_alarm_disabled));
+                        progressAlarm.setVisibility(View.VISIBLE);
+                        startTimerService(SERVICE_TIMER_TYPE_ALARM);
+                        appendLog("Odeslán požadavek na alarm...", true);
+                    }
+
+                    @Override
+                    public void onNoSelected() {
+                    }
+                }).show();
     }
 
     @Click(R.id.imgCall)
     void clickBtnCall() {
-        if (gpsTimer != null) return;
-        if (serviceTimer != null) return;
+        if (isWaitingForResponseFromFcm || isAlarmStarted) {
+            appendLog(
+                    "Čekám na odpověď serveru. Do té doby není možné odesílat další požadavky",
+                    true,
+                    R.color.colorMessageInLogWaitingForResponse);
+            return;
+        }
 
         Animators.animateButtonClick(imgCall);
 
@@ -383,7 +590,12 @@ public class MainActivity extends AppCompatActivity implements
                         if (validatedInput == null) {
                             appPrefs.edit().lastPhoneNumber().put(input).apply();
                             RequestToFcmCall data = new RequestToFcmCall(appPrefs.fcmToken().get(), FCM_REQUEST_TYPE_CALL, input);
-                            sendRequestToFcm(FCM_REQUEST_TYPE_CALL, true, data);
+                            sendRequestToFcm(FCM_REQUEST_TYPE_CALL, data);
+
+                            imgCall.setImageDrawable(MainActivity.this.getResources().getDrawable(R.drawable.ic_call_disabled));
+                            progressCall.setVisibility(View.VISIBLE);
+                            startTimerService(SERVICE_TIMER_TYPE_CALL);
+                            appendLog("Odeslán požadavek na příchozí hovor...", true);
                         } else {
                             DialogInfo.createDialog(MainActivity.this).setTitle("Chyba").setMessage(validatedInput).show();
                         }
@@ -407,63 +619,35 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-    @Click(R.id.labelServiceStatus)
-    void clickLabelServiceStatus() {
-        /*
-        if (serviceTimer == null) {
-            labelCountDownService.setVisibility(View.VISIBLE);
-            progressService.setVisibility(View.VISIBLE);
-            startCountDownServiceConnect();
-        } else {
-            serviceTimer.cancel();
-            serviceTimer = null;
-            labelCountDownService.setVisibility(View.GONE);
-            progressService.setVisibility(View.GONE);
-            serviceCountDownCounter = -1;
+    public void sendRequestToFcm(int requestType, RequestToFcmData requestToFcmData) {
+        String token = appPrefs.remoteToken().get();
+
+        if (token == null) {
+            DialogInfo.createDialog(this).setTitle("Token").setMessage("Zvol vzdálené zařízení").show();
+            return;
         }
-        */
-    }
 
-    @Click(R.id.labelGpsStatus)
-    void clickLabelGpsStatus() {
-        /*
-        if (gpsTimer == null) {
-            labelCountDownGps.setVisibility(View.VISIBLE);
-            progressGps.setVisibility(View.VISIBLE);
-            startCountDownGpsStart();
-        } else {
-            gpsTimer.cancel();
-            gpsTimer = null;
-            labelCountDownGps.setVisibility(View.GONE);
-            progressGps.setVisibility(View.GONE);
-            gpsCountDownCounter = -1;
+        if (token.equals("")) {
+            DialogInfo.createDialog(this).setTitle("Token").setMessage("Zvol vzdálené zařízení").show();
+            return;
         }
-        */
-    }
 
-    public void sendRequestToFcm(int requestType, boolean blockMultiRequest, RequestToFcmData requestToFcmData) {
-
-        //Log.i(TAG, "sendRequestToFcm()");
         appendLog("sendRequestToFcm: " + AppUtils.requestTypeToString(requestType), true);
 
-        if (blockMultiRequest) {
-            if (isWaitingForResponseFromFcm) {
-                DialogInfo.createDialog(this)
-                        .setMessage("Info")
-                        .setMessage("Čekám na odpověď serveru. Do té doby není možné odesílat další požadavky")
-                        .show();
-                return;
-            }
+        if (isWaitingForResponseFromFcm) {
+            appendLog(
+                    "Čekám na odpověď serveru. Do té doby není možné odesílat další požadavky",
+                    true,
+                    R.color.colorMessageInLogWaitingForResponse);
+            return;
         }
-
-        //isWaitingForResponseFromFcm = true;
 
         if (requestToFcmData == null) {
             requestToFcmData = new RequestToFcmData(MainActivity.appPrefs.fcmToken().get(), requestType);
         }
 
         RequestToFcm requestToFcm = new RequestToFcm(
-                "fFfB73jMSd8:APA91bHLR5xFgmd3wqjYo70x9Ymcq-Ws2yYQGfUYuKdptXFPw759WZF3iYc_wDp_JUHbygOfGaJhWBSfowa-9NLj3fwSGRpVlJAeS66qWc2FgqsZrllBcpq9TIe6SgdZ7YRnglwhpM1I",
+                token,
                 requestToFcmData);
 
         Log.i(TAG, requestToFcm.toString());
@@ -474,11 +658,11 @@ public class MainActivity extends AppCompatActivity implements
         callFcm.enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, final Response<ResponseBody> response) {
-                //Log.i(TAG, "response code: " + response.code());
-                appendLog("response code: " + response.code(), true);
+                appendLog("Response code: " + response.code(), true);
+
                 if (response.isSuccessful()) {
                     Log.i(TAG, "isSuccessful: TRUE");
-                    appendLog("...isSuccessful", true);
+                    appendLog("Čekám na odpověď vzdáleného zařízení...", true);
 
                     try {
                         Log.i(TAG, "response: " + response.body().string());
@@ -487,20 +671,13 @@ public class MainActivity extends AppCompatActivity implements
                         e.printStackTrace();
                     }
                 } else {
-                    //Log.i(TAG, "isSuccessful: FALSE");
+                    stopTimerTask();
 
                     closeFragmentLoad(new OnFragmentLoadClosedListener() {
                         @Override
                         public void onFragmentLoadClosed() {
                             try {
-                                //Log.i(TAG, "response: " + response.errorBody().string());
-                                appendLog("...failure: " + response.errorBody().toString(), true);
-
-                                DialogInfo.createDialog(
-                                        MainActivity.this)
-                                        .setTitle("Chyba")
-                                        .setMessage("Chyba: " + response.errorBody().string())
-                                        .show();
+                                appendLog("Odeslání požadavku se nezdařilo: " + response.errorBody().string(), true);
                             } catch (IOException e) {
                                 Log.i(TAG, "response: IOException: ");
                                 e.printStackTrace();
@@ -512,17 +689,15 @@ public class MainActivity extends AppCompatActivity implements
 
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
+                appendLog("Odeslání požadavku se nezdařilo.", true);
                 Log.i(TAG, "onFailure: ");
                 Log.i(TAG, t.getMessage());
+
+                stopTimerTask();
 
                 closeFragmentLoad(new OnFragmentLoadClosedListener() {
                     @Override
                     public void onFragmentLoadClosed() {
-                        DialogInfo.createDialog(
-                                MainActivity.this)
-                                .setTitle("Chyba")
-                                .setMessage("Chyba: " + "onFailure()")
-                                .show();
                     }
                 });
             }
@@ -531,9 +706,14 @@ public class MainActivity extends AppCompatActivity implements
 
     public void checkServiceStatus() {
         Log.i(TAG, "serviceStopedReceiver - checkServiceStatus()");
+
+        if (labelServiceStatus != null) labelServiceStatus.setAlpha(ALPHA_VISIBILITY_GONE);
+        if (labelCountDownService != null) labelCountDownService.setVisibility(View.VISIBLE);
+        if (progressService != null) progressService.setVisibility(View.VISIBLE);
+
         checkingServiceStatusInProgress = true;
-        startCountDownServiceConnect();
-        sendRequestToFcm(FCM_REQUEST_TYPE_SERVICE_STATUS, true, null);
+        startTimerService(SERVICE_TIMER_TYPE_SERVICE);
+        sendRequestToFcm(FCM_REQUEST_TYPE_SERVICE_STATUS, null);
     }
 
     @UiThread
@@ -551,7 +731,6 @@ public class MainActivity extends AppCompatActivity implements
             fragmentTransaction.commitAllowingStateLoss();
         } else {
             int beCount = fragmentManager.getBackStackEntryCount();
-            //if (beCount == 0) return;
             fragmentManager.popBackStack("FragmentLoad_", 0);
             fragmentLoad.setLabel(labelText);
         }
@@ -668,223 +847,60 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-    private void startCountDownServiceConnect() {
-        if (labelServiceStatus != null) labelServiceStatus.setAlpha(ALPHA_VISIBILITY_GONE);
-        if (labelCountDownService != null) labelCountDownService.setVisibility(View.VISIBLE);
-        if (progressService != null) progressService.setVisibility(View.VISIBLE);
-        //if (btnCheckService != null) btnCheckService.setBackgroundColor(getResources().getColor(R.color.colorBtnDisabled));
-        //if (btnStartStopService != null) btnStartStopService.setBackgroundColor(getResources().getColor(R.color.colorBtnDisabled));
+    public void showFragmentDevices() {
+        FragmentDevices fragmentDevices = (FragmentDevices) fragmentManager.findFragmentByTag("FragmentDevices_");
 
-        serviceTimer = new CountDownTimer(serviceCountDownCounter == -1 ? MAX_TIME_FOR_WAITING_FCM_RESPONSE : serviceCountDownCounter, 1000) {
-
-            public void onTick(long millisUntilFinished) {
-                labelCountDownService.setText("" + millisUntilFinished / 1000);
-                serviceCountDownCounter = millisUntilFinished;
-                Log.i("ghghgh", "" + millisUntilFinished / 1000);
-            }
-
-            public void onFinish() {
-                if (labelCountDownService != null)
-                    labelCountDownService.setText("" + (MAX_TIME_FOR_WAITING_FCM_RESPONSE + 1000) / 1000);
-                if (labelCountDownService != null) labelCountDownService.setVisibility(View.GONE);
-                if (progressService != null) progressService.setVisibility(View.GONE);
-
-                serviceTimer = null;
-                serviceCountDownCounter = -1;
-                isWaitingForResponseFromFcm = false;
-
-                if (isServiceStarted) labelServiceStatus.setAlpha(ALPHA_VISIBILITY_VISIBLE);
-
-                DialogInfo.createDialog(MainActivity.this)
-                        .setTitle("Chyba")
-                        .setMessage("Nepodařilo se doručit zprávu v nastaveném časovém limitu")
-                        .show();
-            }
-        }.start();
-    }
-
-    private void startCountDownGpsStart(final boolean requestStartGps) {
-        if (labelGpsStatus != null) labelGpsStatus.setAlpha(ALPHA_VISIBILITY_GONE);
-        if (labelCountDownGps != null) labelCountDownGps.setVisibility(View.VISIBLE);
-        if (progressGps != null) progressGps.setVisibility(View.VISIBLE);
-
-        long counterLimit = MAX_TIME_FOR_WAITING_FCM_RESPONSE_LOCATION_CREATE;
-        if (requestStartGps) counterLimit = MAX_TIME_FOR_WAITING_FCM_RESPONSE;
-
-        gpsTimer = new CountDownTimer(gpsCountDownCounter == -1 ? counterLimit : gpsCountDownCounter, 1000) {
-
-            public void onTick(long millisUntilFinished) {
-                labelCountDownGps.setText("" + millisUntilFinished / 1000);
-                gpsCountDownCounter = millisUntilFinished;
-            }
-
-            public void onFinish() {
-                gpsTimer = null;
-                gpsCountDownCounter = -1;
-                isRequestStartGps = false;
-
-                if (labelCountDownGps != null) labelCountDownGps.setText("" + (MAX_TIME_FOR_WAITING_FCM_RESPONSE + 1000) / 1000);
-                if (labelCountDownGps != null) labelCountDownGps.setVisibility(View.GONE);
-                if (progressGps != null) progressGps.setVisibility(View.GONE);
-
-                isWaitingForResponseFromFcm = false;
-
-                closeFragmentLoad(new OnFragmentLoadClosedListener() {
-                    @Override
-                    public void onFragmentLoadClosed() {
-                        DialogInfo.createDialog(MainActivity.this)
-                                .setTitle("Chyba")
-                                .setMessage("Nepodařilo se zpracovat úpžadavek v nastaveném časovém limitu")
-                                .show();
-                    }
-                });
-
-                /*
-                if (requestStartGps) {
-                    if (labelCountDownGps != null) labelCountDownGps.setText("" + (MAX_TIME_FOR_WAITING_FCM_RESPONSE + 1000) / 1000);
-                    if (labelCountDownGps != null) labelCountDownGps.setVisibility(View.GONE);
-                    if (progressGps != null) progressGps.setVisibility(View.GONE);
-
-                    isWaitingForResponseFromFcm = false;
-
-                    closeFragmentLoad(new OnFragmentLoadClosedListener() {
-                        @Override
-                        public void onFragmentLoadClosed() {
-                            DialogInfo.createDialog(MainActivity.this)
-                                    .setTitle("Chyba")
-                                    .setMessage("Nepodařilo se zapnout GPS v nastaveném časovém limitu")
-                                    .show();
-                        }
-                    });
-                } else {
-                    startCountDownLocationResult();
-                    sendRequestToFcm(FCM_REQUEST_TYPE_LOCATION_RESULT, true, null);
-                }
-                */
-            }
-        }.start();
-    }
-
-    public void startCountDownSettings() {
-        final FragmentSaveToDb fragmentSaveToDb = (FragmentSaveToDb) fragmentManager.findFragmentByTag("FragmentSaveToDb_");
-        if (fragmentSaveToDb == null) return;
-        if (!AppUtils.isFragmentCurrent("FragmentSaveToDb_", fragmentManager)) return;
-
-        settingsTimer = new CountDownTimer(settingsCountDownCounter == -1 ? MAX_TIME_FOR_WAITING_FCM_RESPONSE : settingsCountDownCounter, 1000) {
-
-            public void onTick(long millisUntilFinished) {
-                settingsCountDownCounter = millisUntilFinished;
-            }
-
-            public void onFinish() {
-                fragmentSaveToDb.updateViewsAfterSendClick(true);
-                fragmentSaveToDb.updateViewsAfterLoadClick(true);
-                settingsTimer = null;
-                settingsCountDownCounter = -1;
-                isWaitingForResponseFromFcm = false;
-
-                closeFragmentLoad(new OnFragmentLoadClosedListener() {
-                    @Override
-                    public void onFragmentLoadClosed() {
-                        DialogInfo.createDialog(MainActivity.this)
-                                .setTitle("Chyba")
-                                .setMessage("Nepodařilo se odeslat nastavení v nastaveném časovém limitu")
-                                .show();
-                    }
-                });
-            }
-        }.start();
-    }
-
-    public void startCountDownLocationResult() {
-        locationResultTimer = new CountDownTimer(locationResultCountDownCounter == -1 ? MAX_TIME_FOR_WAITING_FCM_RESPONSE : locationResultCountDownCounter, 1000) {
-
-            public void onTick(long millisUntilFinished) {
-                labelCountDownGps.setText("" + millisUntilFinished / 1000);
-                locationResultCountDownCounter = millisUntilFinished;
-            }
-
-            public void onFinish() {
-                if (labelCountDownGps != null) labelCountDownGps.setText("" + (MAX_TIME_FOR_WAITING_FCM_RESPONSE + 1000) / 1000);
-                if (labelCountDownGps != null) labelCountDownGps.setVisibility(View.GONE);
-                if (progressGps != null) progressGps.setVisibility(View.GONE);
-
-                locationResultTimer = null;
-                locationResultCountDownCounter = -1;
-
-                isWaitingForResponseFromFcm = false;
-
-                closeFragmentLoad(new OnFragmentLoadClosedListener() {
-                    @Override
-                    public void onFragmentLoadClosed() {
-                        DialogInfo.createDialog(MainActivity.this)
-                                .setTitle("Chyba")
-                                .setMessage("Nepodařilo se získat polohu v nastaveném časovém limitu")
-                                .show();
-                    }
-                });
-            }
-        }.start();
-    }
-
-    private void stopCountDownServiceConnect() {
-        if (serviceTimer != null) {
-            serviceTimer.cancel();
-            serviceTimer = null;
+        if (fragmentDevices == null) {
+            fragmentDevices = FragmentDevices_.builder().build();
+            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+            fragmentTransaction.setCustomAnimations(animShowFragment, animHideFragment, animShowFragment, animHideFragment);
+            fragmentTransaction.add(R.id.container, fragmentDevices, "FragmentDevices_");
+            fragmentTransaction.addToBackStack("FragmentDevices_");
+            fragmentTransaction.commit();
+        } else {
+            int beCount = fragmentManager.getBackStackEntryCount();
+            if (beCount == 0) return;
+            fragmentManager.popBackStack("FragmentDevices_", 0);
         }
-
-        if (labelCountDownService != null) labelCountDownService.setVisibility(View.GONE);
-        if (progressService != null) progressService.setVisibility(View.GONE);
-
-        serviceCountDownCounter = -1;
     }
 
-    private void stopCountDownGpsConnect() {
-        if (gpsTimer != null) {
-            gpsTimer.cancel();
-            gpsTimer = null;
+    public void showFragmentDeviceDetail(Device device) {
+        FragmentDeviceDetail fragmentDeviceDetail = (FragmentDeviceDetail) fragmentManager.findFragmentByTag("FragmentDeviceDetail_");
+
+        if (fragmentDeviceDetail == null) {
+            fragmentDeviceDetail = FragmentDeviceDetail_.builder().device(device).build();
+            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+            fragmentTransaction.setCustomAnimations(animShowFragment, animHideFragment, animShowFragment, animHideFragment);
+            fragmentTransaction.add(R.id.container, fragmentDeviceDetail, "FragmentDeviceDetail_");
+            fragmentTransaction.addToBackStack("FragmentDeviceDetail_");
+            fragmentTransaction.commit();
+        } else {
+            int beCount = fragmentManager.getBackStackEntryCount();
+            if (beCount == 0) return;
+            fragmentManager.popBackStack("FragmentDeviceDetail_", 0);
         }
-
-        if (labelCountDownGps != null) labelCountDownGps.setVisibility(View.GONE);
-        if (progressGps != null) progressGps.setVisibility(View.GONE);
-
-        gpsCountDownCounter = -1;
-    }
-
-    public void stopCountDownSettings() {
-        if (settingsTimer != null) {
-            settingsTimer.cancel();
-            settingsTimer = null;
-        }
-
-        final FragmentSaveToDb fragmentSaveToDb = (FragmentSaveToDb) fragmentManager.findFragmentByTag("FragmentSaveToDb_");
-        if (fragmentSaveToDb == null) return;
-        fragmentSaveToDb.updateViewsAfterSendClick(true);
-        fragmentSaveToDb.updateViewsAfterLoadClick(true);
-        settingsCountDownCounter = -1;
-    }
-
-    public void stopCountDownLocationResult() {
-        if (locationResultTimer != null) {
-            locationResultTimer.cancel();
-            locationResultTimer = null;
-        }
-
-        if (labelCountDownGps != null) labelCountDownGps.setVisibility(View.GONE);
-        if (progressGps != null) progressGps.setVisibility(View.GONE);
-        locationResultCountDownCounter = -1;
     }
 
     private void registerLocationReceiver() {
         Log.i(TAG, "registerLocationReceiver()");
 
-        locacionReceiver = new BroadcastReceiver() {
+        locationReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 Log.i(TAG, "LocacionReceiver() - onReceive()");
+                appendLog("Odpověď : POLOHA", true, R.color.colorMessageInLogResponse);
+                stopTimerTask();
+                isRequestLocation = false;
 
-                stopCountDownLocationResult();
-                stopCountDownGpsConnect();
+                if (isRequestStopServiceAfterWork) {
+                    sendRequestToFcm(FCM_REQUEST_TYPE_SERVICE_STOP, null);
+                    isRequestStopServiceAfterWork = false;
+                }
+
+                if (labelCountDownGps != null) labelCountDownGps.setText("" + (MAX_TIME_FOR_WAITING_FCM_RESPONSE + 1000) / 1000);
+                if (labelCountDownGps != null) labelCountDownGps.setVisibility(View.GONE);
+                if (progressGps != null) progressGps.setVisibility(View.GONE);
+                if (isGpsStarted) labelGpsStatus.setAlpha(ALPHA_VISIBILITY_VISIBLE);
 
                 if (intent == null) return;
 
@@ -898,7 +914,9 @@ public class MainActivity extends AppCompatActivity implements
                     return;
                 }
 
-                updateBatteryStatus(intent.getStringExtra(KEY_BATTERY_PERCENTAGES), intent.getStringExtra(KEY_BATTERY_PLUGGED));
+                processBatteryData(intent.getStringExtra(KEY_BATTERY_PERCENTAGES), intent.getStringExtra(KEY_BATTERY_PLUGGED));
+                updateBatteryStatus();
+
                 RemoteMessage remoteMessage = intent.getParcelableExtra(KEY_DATA);
 
                 if (remoteMessage != null) {
@@ -924,7 +942,7 @@ public class MainActivity extends AppCompatActivity implements
                                 e.printStackTrace();
                             }
 
-                            labelLastGpsUpdatet.setText(DateTimeUtils.getDateTime(newLocation.getDate()));
+                            labelLastGpsUpdated.setText(DateTimeUtils.getDateTime(newLocation.getDate()));
                             updateAddress(AppUtils.getAddressForLocation(MainActivity.this, newLocation.getLatitude(), newLocation.getLongitude()));
 
                             Log.i(TAG, "LocacionReceiver() - onReceive() - newLocation:");
@@ -946,7 +964,7 @@ public class MainActivity extends AppCompatActivity implements
             }
         };
 
-        LocalBroadcastManager.getInstance(this).registerReceiver(locacionReceiver, new IntentFilter(ACTION_LOCATION_BROADCAST));
+        LocalBroadcastManager.getInstance(this).registerReceiver(locationReceiver, new IntentFilter(ACTION_LOCATION_BROADCAST));
     }
 
     public void registerServiceStatusCheckedReceiver() {
@@ -954,15 +972,32 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onReceive(Context context, Intent intent) {
                 Log.i(TAG, "serviceStatusCheckedReceiver - onReceive()");
+                appendLog("Odpověď : STAV SLUŽBY", true, R.color.colorMessageInLogResponse);
 
-                isWaitingForResponseFromFcm = false;
-                isRequestStartGps = false;
+                if (labelCountDownService != null)
+                    labelCountDownService.setText("" + (MAX_TIME_FOR_WAITING_FCM_RESPONSE + 1000) / 1000);
+                if (labelCountDownService != null) labelCountDownService.setVisibility(View.GONE);
 
-                stopCountDownServiceConnect();
-                stopCountDownGpsConnect();
+                if (progressService != null) progressService.setVisibility(View.GONE);
+
+                if (!isRequestLocation) {
+                    if (labelCountDownGps != null)
+                        labelCountDownGps.setText("" + (MAX_TIME_FOR_WAITING_FCM_RESPONSE + 1000) / 1000);
+                    if (labelCountDownGps != null) labelCountDownGps.setVisibility(View.GONE);
+
+                    if (progressGps != null) progressGps.setVisibility(View.GONE);
+
+                    stopTimerTask();
+                }
+
+                if (isServiceStarted) labelServiceStatus.setAlpha(ALPHA_VISIBILITY_VISIBLE);
+                if (isGpsStarted) labelGpsStatus.setAlpha(ALPHA_VISIBILITY_VISIBLE);
 
                 if (intent == null) return;
-                updateBatteryStatus(intent.getStringExtra(KEY_BATTERY_PERCENTAGES), intent.getStringExtra(KEY_BATTERY_PLUGGED));
+
+                processBatteryData(intent.getStringExtra(KEY_BATTERY_PERCENTAGES), intent.getStringExtra(KEY_BATTERY_PLUGGED));
+                updateBatteryStatus();
+
                 String responseServiceStatus = intent.getStringExtra(KEY_SERVICE_STATUS);
                 String responseGpsStatus = intent.getStringExtra(KEY_GPS_STATUS);
                 updateMessage(intent.getStringExtra(KEY_MESSAGE));
@@ -990,14 +1025,24 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onReceive(Context context, Intent intent) {
                 Log.i(TAG, "databaseSettingsUpdatedReceiver - onReceive()");
+                appendLog("Odpověď : NASTAVNENÍ UPRAVENO", true, R.color.colorMessageInLogResponse);
 
-                stopCountDownSettings();
+                stopTimerTask();
 
-                FragmentSaveToDb fragmentSaveToDb = (FragmentSaveToDb) fragmentManager.findFragmentByTag("FragmentSaveToDb_");
-                if (fragmentSaveToDb != null) {
-                    fragmentSaveToDb.updateViewsAfterSendClick(true);
-                    fragmentSaveToDb.updateViewsAfterLoadClick(true);
-                }
+                closeFragmentLoad(new OnFragmentLoadClosedListener() {
+                    @Override
+                    public void onFragmentLoadClosed() {
+                        final FragmentSaveToDb fragmentSaveToDb = (FragmentSaveToDb) fragmentManager.findFragmentByTag("FragmentSaveToDb_");
+                        if (fragmentSaveToDb == null) return;
+                        if (!AppUtils.isFragmentCurrent("FragmentSaveToDb_", fragmentManager))
+                            return;
+
+                        fragmentSaveToDb.updateViewsAfterSendClick(true);
+                        fragmentSaveToDb.updateViewsAfterLoadClick(true);
+
+                        //AppUtils.showRequestTimerError(MainActivity.this);
+                    }
+                });
 
                 if (intent.getIntExtra(KEY_SAVE_NEW_DB_SETTINGS, -1) == DB_SETTINGS_UPDATED_SUCCESS) {
                     DialogInfo.createDialog(MainActivity.this)
@@ -1026,6 +1071,7 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onReceive(Context context, Intent intent) {
                 Log.i(TAG, "databaseSettingsLoadedReceiver - onReceive()");
+                appendLog("Odpověď : NASTAVENÍ NAČTENO", true, R.color.colorMessageInLogResponse);
 
                 int savingToDatabaseEnabled = 0;
                 long autoCheckedPositionSavingInterval = -1;
@@ -1033,8 +1079,7 @@ public class MainActivity extends AppCompatActivity implements
                 int timeUnit = TIME_UNIT_SECONDS;
                 long locationsInterval = LOCATION_DEFAULT_INTERVAL;
                 int locationsIntervalTimeUnit = TIME_UNIT_SECONDS;
-
-                stopCountDownSettings();
+                stopTimerTask();
 
                 try {
                     savingToDatabaseEnabled = Integer.parseInt(intent.getStringExtra(KEY_DB_ENABLED));
@@ -1081,22 +1126,172 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onReceive(Context context, Intent intent) {
                 Log.i(TAG, "messageReceiver - onReceive()");
+                appendLog("Odpověď : ZPRÁVA", true, R.color.colorMessageInLogResponse);
 
-                DialogInfo.createDialog(MainActivity.this)
-                        .setTitle("Info")
-                        .setMessage(intent.getStringExtra(KEY_MESSAGE))
-                        .show();
+                int actionCode = ACTION_MESSAGE_CODE_NONE;
+
+                try {
+                    actionCode = Integer.parseInt(intent.getStringExtra(KEY_ACTION_MESSAGE_CODE));
+                } catch (NumberFormatException e) {
+                    e.printStackTrace();
+                }
+
+                processMessageActionCode(actionCode, intent.getStringExtra(KEY_MESSAGE));
             }
         };
 
         LocalBroadcastManager.getInstance(this).registerReceiver(messageReceiver, new IntentFilter(ACTION_SHOW_MESSAGE));
     }
 
+    public void registerCounterReceiver() {
+        Log.i(TAG_SERVICE, "MainActivity - registerCounterReceiver()");
+        counterReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Log.i(TAG_SERVICE, "counterReceiver - onReceive()");
+
+                int timerType = intent.getIntExtra(KEY_SERVICE_TIMER_TYPE, SERVICE_TIMER_TYPE_NONE);
+                long progress = intent.getLongExtra(KEY_SERVICE_PROGRESS, SERVICE_COUNTDOWN_IS_OVER);
+
+                Log.i(TAG_SERVICE, "progress: " + progress);
+
+                if (progress == SERVICE_COUNTDOWN_IS_OVER || progress == SERVICE_COUNTDOWN_IS_OFF) {
+                    stopTimerTask();
+                }
+
+                //Po nezdařeném získaní stavu zařízení (vypršení času pro získání stavu)
+                if (progress == SERVICE_COUNTDOWN_IS_OFF) {
+                    batteryPercentages = -1;
+                    updateBatteryStatus();
+                    labelServiceStatus.setAlpha(ALPHA_VISIBILITY_GONE);
+                    labelGpsStatus.setAlpha(ALPHA_VISIBILITY_GONE);
+                }
+
+                switch (timerType) {
+                    case SERVICE_TIMER_TYPE_NONE:
+                        break;
+                    case SERVICE_TIMER_TYPE_SERVICE:
+                        if (progress != SERVICE_COUNTDOWN_IS_OVER && progress != SERVICE_COUNTDOWN_IS_OFF) {
+                            if (labelCountDownService != null)
+                                labelCountDownService.setVisibility(View.VISIBLE);
+                            if (progressService != null)
+                                progressService.setVisibility(View.VISIBLE);
+                            labelCountDownService.setText("" + progress / 1000);
+                        } else {
+                            if (labelCountDownService != null)
+                                labelCountDownService.setText("" + (MAX_TIME_FOR_WAITING_FCM_RESPONSE + 1000) / 1000);
+                            if (labelCountDownService != null)
+                                labelCountDownService.setVisibility(View.GONE);
+                            if (progressService != null) progressService.setVisibility(View.GONE);
+
+                            if (isServiceStarted)
+                                labelServiceStatus.setAlpha(ALPHA_VISIBILITY_VISIBLE);
+                            AppUtils.showRequestTimerError(MainActivity.this);
+                            appendLog("Nepodařilo se zpracovat požadavek v nastaveném časovém limitu", true);
+                        }
+                        break;
+                    case SERVICE_TIMER_TYPE_GPS:
+                        if (progress != SERVICE_COUNTDOWN_IS_OVER && progress != SERVICE_COUNTDOWN_IS_OFF) {
+                            if (labelCountDownGps != null)
+                                labelCountDownGps.setVisibility(View.VISIBLE);
+                            if (progressGps != null) progressGps.setVisibility(View.VISIBLE);
+                            labelCountDownGps.setText("" + progress / 1000);
+                        } else {
+                            if (labelCountDownGps != null)
+                                labelCountDownGps.setText("" + (MAX_TIME_FOR_WAITING_FCM_RESPONSE + 1000) / 1000);
+                            if (labelCountDownGps != null)
+                                labelCountDownGps.setVisibility(View.GONE);
+                            if (progressGps != null) progressGps.setVisibility(View.GONE);
+
+                            AppUtils.showRequestTimerError(MainActivity.this);
+                            appendLog("Nepodařilo se zpracovat požadavek v nastaveném časovém limitu", true);
+                        }
+                        break;
+                    case SERVICE_TIMER_TYPE_LOCATION:
+                        if (progress != SERVICE_COUNTDOWN_IS_OVER && progress != SERVICE_COUNTDOWN_IS_OFF) {
+                            if (labelCountDownGps != null)
+                                labelCountDownGps.setVisibility(View.VISIBLE);
+                            if (progressGps != null) progressGps.setVisibility(View.VISIBLE);
+                            labelCountDownGps.setText("" + progress / 1000);
+                        } else {
+                            if (labelCountDownGps != null)
+                                labelCountDownGps.setText("" + (MAX_TIME_FOR_WAITING_FCM_RESPONSE + 1000) / 1000);
+                            if (labelCountDownGps != null)
+                                labelCountDownGps.setVisibility(View.GONE);
+                            if (progressGps != null) progressGps.setVisibility(View.GONE);
+
+                            AppUtils.showRequestTimerError(MainActivity.this);
+                            appendLog("Nepodařilo se zpracovat požadavek v nastaveném časovém limitu", true);
+
+                            isRequestLocation = false;
+                        }
+                        break;
+                    case SERVICE_TIMER_TYPE_SETTINGS:
+                        final FragmentSaveToDb fragmentSaveToDb = (FragmentSaveToDb) fragmentManager.findFragmentByTag("FragmentSaveToDb_");
+
+                        if (progress != SERVICE_COUNTDOWN_IS_OVER && progress != SERVICE_COUNTDOWN_IS_OFF) {
+                            FragmentLoad fragmentLoad = (FragmentLoad) fragmentManager.findFragmentByTag("FragmentLoad_");
+
+                            if (fragmentLoad != null) {
+                                fragmentLoad.updateLabel("Stahuji nastavení (" + (progress / 1000) + ")");
+                            }
+                        } else {
+                            closeFragmentLoad(new OnFragmentLoadClosedListener() {
+                                @Override
+                                public void onFragmentLoadClosed() {
+                                    if (fragmentSaveToDb == null) return;
+                                    if (!AppUtils.isFragmentCurrent("FragmentSaveToDb_", fragmentManager))
+                                        return;
+
+                                    fragmentSaveToDb.updateViewsAfterSendClick(true);
+                                    fragmentSaveToDb.updateViewsAfterLoadClick(true);
+
+                                    AppUtils.showRequestTimerError(MainActivity.this);
+                                    appendLog("Nepodařilo se zpracovat požadavek v nastaveném časovém limitu", true);
+                                }
+                            });
+                        }
+                        break;
+                    case SERVICE_TIMER_TYPE_ALARM:
+                        if (progress != SERVICE_COUNTDOWN_IS_OVER && progress != SERVICE_COUNTDOWN_IS_OFF) {
+                            if (progressAlarm != null) progressAlarm.setVisibility(View.VISIBLE);
+                            if (imgAlarm != null)
+                                imgAlarm.setImageDrawable(getResources().getDrawable(R.drawable.ic_alarm_disabled));
+                        } else {
+                            if (progressAlarm != null) progressAlarm.setVisibility(View.GONE);
+                            if (imgAlarm != null)
+                                imgAlarm.setImageDrawable(getResources().getDrawable(R.drawable.ic_alarm));
+
+                            AppUtils.showRequestTimerError(MainActivity.this);
+                            appendLog("Nepodařilo se zpracovat požadavek v nastaveném časovém limitu", true);
+                        }
+                        break;
+                    case SERVICE_TIMER_TYPE_CALL:
+                        if (progress != SERVICE_COUNTDOWN_IS_OVER && progress != SERVICE_COUNTDOWN_IS_OFF) {
+                            if (progressCall != null) progressCall.setVisibility(View.VISIBLE);
+                            if (imgCall != null)
+                                imgCall.setImageDrawable(getResources().getDrawable(R.drawable.ic_call_disabled));
+                        } else {
+                            if (progressCall != null) progressCall.setVisibility(View.GONE);
+                            if (imgCall != null)
+                                imgCall.setImageDrawable(getResources().getDrawable(R.drawable.ic_call));
+
+                            AppUtils.showRequestTimerError(MainActivity.this);
+                            appendLog("Nepodařilo se zpracovat požadavek v nastaveném časovém limitu", true);
+                        }
+                        break;
+                }
+            }
+        };
+
+        LocalBroadcastManager.getInstance(this).registerReceiver(counterReceiver, new IntentFilter(ACTION_SERVICE_PROGRESS));
+    }
+
     private void unregisterLocationReceiver() {
         Log.i(TAG, "unregisterLocationReceiver()");
 
         try {
-            LocalBroadcastManager.getInstance(this).unregisterReceiver(locacionReceiver);
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(locationReceiver);
         } catch (IllegalArgumentException e) {
             Log.i(TAG, "unregisterLocationReceiver(): " + e.getMessage());
         }
@@ -1142,28 +1337,23 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-    private void updateBatteryStatus(String batteryPercentages, String batteryPlugged) {
-        if (batteryPercentages == null) labelBattery.setText("???");
-        if (batteryPercentages.equals("")) labelBattery.setText("???");
-        if (batteryPercentages.equals("0")) labelBattery.setText("???");
-        else labelBattery.setText("" + batteryPercentages + "%");
-
-        int percentages = -1;
-        boolean plugged = !batteryPlugged.equals("0");
+    private void unregisterCounterReceiver() {
+        Log.i(TAG_SERVICE, "MainActivity - unregisterCounterReceiver()");
 
         try {
-            percentages = (int) Float.parseFloat(batteryPercentages);
-        } catch (NumberFormatException e) {
-            e.printStackTrace();
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(counterReceiver);
+        } catch (IllegalArgumentException e) {
+            Log.i(TAG_SERVICE, "unregisterCounterReceiver(): " + e.getMessage());
         }
+    }
 
-        imgBattery.setImageDrawable(getResources().getDrawable(AppUtils.getImageResForBattery(percentages, plugged)));
-
+    private void updateBatteryStatus() {
+        imgBattery.setImageDrawable(getResources().getDrawable(AppUtils.getImageResForBattery(this.batteryPercentages, this.batteryIsPlugged)));
+        labelBattery.setText(batteryPercentages >= 0 ? ("" + batteryPercentages + "%") : "?");
     }
 
     private void updateMessage(String message) {
-        if (message == null) labelMessage.setText("");
-        else labelMessage.setText(message);
+        if (message != null) appendLog(message, true, R.color.colorMessageInLog);
     }
 
     private void updateAddress(Address address) {
@@ -1172,7 +1362,7 @@ public class MainActivity extends AppCompatActivity implements
 
     public void getAllCheckedPositions(final OnAllCheckedPositionsLoadedListener listener) {
         ApiDatabase api = ControllerDatabase.getRetrofitInstance().create(ApiDatabase.class);
-        final Call<ResponseAllCheckedPositions> call = api.getAllCheckedPositions(1);
+        final Call<ResponseAllCheckedPositions> call = api.getAllCheckedPositions(appPrefs.remoteDeviceId().get());
 
         showFrgmentLoad("Stahuji data", 0, new OnFragmentLoadShowedListener() {
             @Override
@@ -1183,6 +1373,15 @@ public class MainActivity extends AppCompatActivity implements
 
                         if (response.isSuccessful()) {
                             if (response.body() != null) {
+
+                                /*
+                                ResponseBody responseBody = response.body();
+                                try {
+                                    Log.i(TAG, responseBody.string());
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                                */
 
                                 ResponseAllCheckedPositions responseAllCheckedPositions = response.body();
                                 MainActivity.itemsCheckedPositions = new ArrayList<PositionChecked>();
@@ -1239,7 +1438,7 @@ public class MainActivity extends AppCompatActivity implements
 
     public void deleteAllItems(final OnAllItemsDeletedListener listener) {
         final ApiDatabase api = ControllerDatabase.getRetrofitInstance().create(ApiDatabase.class);
-        final Call<ResponseDeletePosition> call = api.deleteAllCheckedPositions();
+        final Call<ResponseDeletePosition> call = api.deleteAllCheckedPositions(appPrefs.remoteDeviceId().get());
 
         showFrgmentLoad("Mazání všech dat...", 0, new OnFragmentLoadShowedListener() {
             @Override
@@ -1303,27 +1502,6 @@ public class MainActivity extends AppCompatActivity implements
         });
     }
 
-    /*
-    private String getPhoneNumber() {
-        Log.i(TAG, "MyFirebaseMessagingService - getPhoneNumber()");
-
-        TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED &&
-                    ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_NUMBERS) != PackageManager.PERMISSION_GRANTED &&
-                    ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-
-                return null;
-            } else {
-                return tm.getLine1Number();
-            }
-        } else {
-            return tm.getLine1Number();
-        }
-    }
-    */
-
     private void initStetho() {
         Stetho.InitializerBuilder initializerBuilder = Stetho.newInitializerBuilder(this);
         initializerBuilder.enableWebKitInspector(Stetho.defaultInspectorModulesProvider(this));
@@ -1345,7 +1523,6 @@ public class MainActivity extends AppCompatActivity implements
         };
 
         IntentFilter filter = new IntentFilter(LocationManager.PROVIDERS_CHANGED_ACTION);
-        //filter.addAction(Intent.ACTION_PROVIDER_CHANGED);
         filter.addAction("android.location.PROVIDERS_CHANGED");
 
         LocalBroadcastManager.getInstance(this).registerReceiver(locationProvidersChangedStatusReceiver, filter);
@@ -1358,6 +1535,251 @@ public class MainActivity extends AppCompatActivity implements
             LocalBroadcastManager.getInstance(this).unregisterReceiver(locationProvidersChangedStatusReceiver);
         } catch (IllegalArgumentException e) {
             Log.i(TAG, "LocationMonitoringService - unregisterLocationProvidersChangedStatusReceiver(): " + e.getMessage());
+        }
+    }
+
+    private void processBatteryData(String percentages, String status) {
+        this.batteryPercentages = -1;
+        this.batteryIsPlugged = false;
+
+        this.batteryIsPlugged = !status.equals("0");
+
+        try {
+            this.batteryPercentages = (int) Float.parseFloat(percentages);
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void processMessageActionCode(int actionCode, String message) {
+        switch (actionCode) {
+            case ACTION_MESSAGE_CODE_ALARM_START:
+                appendLog(message, true);
+                isAlarmStarted = true;
+                imgAlarm.setImageDrawable(MainActivity.this.getResources().getDrawable(R.drawable.ic_alarm_red));
+                progressAlarm.setVisibility(View.GONE);
+                stopTimerTask();
+                break;
+            case ACTION_MESSAGE_CODE_ALARM_STOP:
+                appendLog(message, true);
+                isAlarmStarted = false;
+                imgAlarm.setImageDrawable(MainActivity.this.getResources().getDrawable(R.drawable.ic_alarm));
+                break;
+            case ACTION_MESSAGE_CODE_CALL_REQUEST:
+                appendLog(message, true);
+                imgCall.setImageDrawable(MainActivity.this.getResources().getDrawable(R.drawable.ic_call));
+                progressCall.setVisibility(View.GONE);
+                stopTimerTask();
+
+                DialogInfo.createDialog(this)
+                        .setTitle("PŘÍCHOZÍ HOVOR")
+                        .setMessage("ČEKEJ NA PŘÍCHOZÍ HOVOR ZE VZDÁLENÉHO ZAŘÍZENÍ!")
+                        .show();
+                break;
+            case ACTION_MESSAGE_CODE_CALL_ERROR:
+                appendLog(message, true);
+                imgCall.setImageDrawable(MainActivity.this.getResources().getDrawable(R.drawable.ic_call));
+                progressCall.setVisibility(View.GONE);
+                stopTimerTask();
+                break;
+        }
+    }
+
+    private void stopTimerTask() {
+        isWaitingForResponseFromFcm = false;
+        timerRequestType = SERVICE_TIMER_TYPE_NONE;
+        if (appService != null) appService.setRequestStopService();
+        else Log.i(TAG_SERVICE, "appService == null");
+        unbindTimerService();
+    }
+
+    private void getRegisteredDevices(final OnRegisteredDevicesLoadedListener listener) {
+        ApiDatabase api = ControllerDatabase.getRetrofitInstance().create(ApiDatabase.class);
+        final Call<ResponseAllDevices> call = api.getAllDevices();
+
+        showFrgmentLoad("Stahuji seznam registrovaných zařízení", 0, new OnFragmentLoadShowedListener() {
+            @Override
+            public void onFragmentLoadShowed() {
+                call.enqueue(new Callback<ResponseAllDevices>() {
+                    @Override
+                    public void onResponse(Call<ResponseAllDevices> call, final Response<ResponseAllDevices> response) {
+                        if (response.isSuccessful()) {
+
+                            /*
+                            try {
+                                Log.i(TAG_DB, response.body().string());
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                            */
+
+                            final ResponseAllDevices responseAllDevices = response.body();
+
+                            if (responseAllDevices.getMessage() != null) {
+                                DialogInfo.createDialog(MainActivity.this).setTitle("Chyba").setMessage(responseAllDevices.getMessage()).show();
+                                return;
+                            }
+
+                            String thisAndroidId = appPrefs.androidId().get();
+                            ArrayList<Device> toReturn = new ArrayList<>();
+
+                            if (responseAllDevices.getDevices() != null && thisAndroidId != null) {
+                                //Pokud je toto zařízení také registrováno druhou aplikací do sledovaných,
+                                //nebude mít samo sebe v seznamu dostupných zařízení pro sledování
+                                for (ResponseDevice responseDevice : responseAllDevices.getDevices()) {
+                                    if (!responseDevice.getAndroid_id().equals(thisAndroidId)) {
+                                        toReturn.add(responseDevice.toDevice());
+                                        if (responseDevice.getId() == appPrefs.remoteDeviceId().getOr(-1))
+                                            toReturn.get(toReturn.size() - 1).setCurrent(true);
+                                    }
+                                }
+                            }
+
+                            registeredDevices = new ArrayList<>(toReturn);
+
+                            closeFragmentLoad(new OnFragmentLoadClosedListener() {
+                                @Override
+                                public void onFragmentLoadClosed() {
+                                    if (listener != null) listener.onRegisteredDevicesLoaded();
+                                    appendLog("Seznam registrovaných zařízení úspěšně stažen", true);
+                                    appendLog("Seznam zařízení: " + responseAllDevices.toString(), true);
+                                }
+                            });
+                        } else {
+                            try {
+                                Log.i(TAG_DB, response.errorBody().string());
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+
+                            closeFragmentLoad(new OnFragmentLoadClosedListener() {
+                                @Override
+                                public void onFragmentLoadClosed() {
+                                    if (listener != null) listener.onRegisteredDevicesLoaded();
+                                    appendLog("Nepodařilo se stáhnout seznam registrovaných zařízení. (CODE " + response.code() + ")", true, R.color.colorMessageInLog);
+                                }
+                            });
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<ResponseAllDevices> call, final Throwable t) {
+                        closeFragmentLoad(new OnFragmentLoadClosedListener() {
+                            @Override
+                            public void onFragmentLoadClosed() {
+                                if (listener != null) listener.onRegisteredDevicesLoaded();
+                                appendLog("Nepodařilo se stáhnout seznam registrovaných zařízení. " + t.getMessage(), true, R.color.colorMessageInLog);
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    }
+
+    CountDownTimer timer = new CountDownTimer(500, 500) {
+        @Override
+        public void onTick(long millisUntilFinished) {}
+
+        @Override
+        public void onFinish() {
+            longClick = true;
+            vibrate(80);
+        }
+    };
+
+    float x1, y1, x2, y2;
+    boolean cancelClick = false;
+    boolean longClick = false;
+    public void processDeviceClick(MotionEvent e, RecyclerView recyclerView) {
+        switch (e.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                x1 = e.getAxisValue(MotionEvent.AXIS_X);
+                y1 = e.getAxisValue(MotionEvent.AXIS_Y);
+                timer.start();
+                break;
+            case MotionEvent.ACTION_MOVE:
+                x2 = e.getAxisValue(MotionEvent.AXIS_X);
+                y2 = e.getAxisValue(MotionEvent.AXIS_Y);
+
+                if (Math.abs(x1 - x2) > 50 || Math.abs(y1 - y2) > 50) {
+                    cancelClick = true;
+                    timer.cancel();
+                    Log.i("tag_motionevent", "ACTION_MOVE - cancel click");
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+                if (cancelClick) {
+                    cancelClick = false;
+                    return;
+                }
+
+                View view = recyclerView.findChildViewUnder(e.getX(), e.getY());
+                int position = recyclerView.getChildAdapterPosition(view);
+                Log.i("tag_motionevent", "POZICE: " + position);
+
+                if (position < 0) return;
+
+                if (longClick) {
+                    longClick = false;
+                    showFragmentDeviceDetail(registeredDevices.get(position));
+                    return;
+                }
+
+                timer.cancel();
+                x2 = e.getAxisValue(MotionEvent.AXIS_X);
+                y2 = e.getAxisValue(MotionEvent.AXIS_Y);
+
+                appendLog("spinner - onItemSelected: Name: " + registeredDevices.get(position).getName(), false, R.color.colorMessageInLog);
+                appPrefs.edit().remoteDeviceId().put(registeredDevices.get(position).getId()).apply();
+                appPrefs.edit().remoteToken().put(registeredDevices.get(position).getToken()).apply();
+
+                labelToolbarDevice.setText(registeredDevices.get(position).getName());
+
+                for (int i = 0, count = registeredDevices.size(); i < count; i ++) {
+                    if (i != position) registeredDevices.get(i).setCurrent(false);
+                    else registeredDevices.get(position).setCurrent(true);
+                }
+
+                onBackPressed();
+                if (!checkingServiceStatusInProgress) checkServiceStatus();
+                break;
+        }
+    }
+
+    private int getDevicePositionInListById(int id) {
+        if (registeredDevices == null) return -1;
+        if (registeredDevices.isEmpty()) return -1;
+
+        for (int i = 0, count = registeredDevices.size(); i < count; i ++) {
+            if (registeredDevices.get(i).getId() == id) return i;
+        }
+
+        return -1;
+    }
+
+    public ArrayList<Device> getRegisteredDevices() {
+        return registeredDevices;
+    }
+
+    public int getDevicePositionInList(int deviceId) {
+        if (registeredDevices == null) return -1;
+        if (registeredDevices.isEmpty()) return -1;
+
+        for (int i = 0, count = registeredDevices.size(); i < registeredDevices.size(); i ++) {
+            if (registeredDevices.get(i).getId() == deviceId) return i;
+        }
+
+        return -1;
+    }
+
+    public void vibrate(long length) {
+        Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            v.vibrate(VibrationEffect.createOneShot(length, VibrationEffect.DEFAULT_AMPLITUDE));
+        } else {
+            v.vibrate(length);
         }
     }
 }
