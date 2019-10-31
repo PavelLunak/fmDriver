@@ -1,8 +1,12 @@
 package com.example.fmdriver.fragments;
 
 import android.content.Context;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ProgressBar;
@@ -19,23 +23,15 @@ import com.example.fmdriver.retrofit.objects.RequestSettingsSaveIntoDatabase;
 import com.example.fmdriver.utils.Animators;
 import com.example.fmdriver.utils.AppConstants;
 
-import org.androidannotations.annotations.AfterViews;
-import org.androidannotations.annotations.Click;
-import org.androidannotations.annotations.EFragment;
-import org.androidannotations.annotations.ViewById;
 
-@EFragment(R.layout.fragment_save_to_db)
-public class FragmentSaveToDb extends Fragment implements AppConstants {
+public class FragmentSaveToDb extends Fragment implements AppConstants, View.OnClickListener {
 
-    MainActivity activity;
-
-    @ViewById
     Switch switchEnableSave;
-
-    @ViewById
     EditText etInterval, etIntervalPositions, etCount;
+    CheckBox chbInfinity;
+    TextView btnStartSave, btnLoadSettings;
+    ProgressBar progressSave, progressLoad;
 
-    @ViewById
     RadioButton
             rbIntervalSeconds,
             rbIntervalMinutes,
@@ -44,14 +40,7 @@ public class FragmentSaveToDb extends Fragment implements AppConstants {
             rbIntervalPositionsMinutes,
             rbIntervalPositionsHours;
 
-    @ViewById
-    CheckBox chbInfinity;
-
-    @ViewById
-    TextView btnStartSave, btnLoadSettings;
-
-    @ViewById
-    ProgressBar progressSave, progressLoad;
+    MainActivity activity;
 
 
     @Override
@@ -63,11 +52,39 @@ public class FragmentSaveToDb extends Fragment implements AppConstants {
         }
     }
 
-    @AfterViews
-    void afterViews() {
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View rootView = inflater.inflate(R.layout.fragment_save_to_db, container, false);
+
+        switchEnableSave = (Switch) rootView.findViewById(R.id.switchEnableSave);
+        etInterval = (EditText) rootView.findViewById(R.id.etInterval);
+        etIntervalPositions = (EditText) rootView.findViewById(R.id.etIntervalPositions);
+        etCount = (EditText) rootView.findViewById(R.id.etCount);
+        rbIntervalSeconds = (RadioButton) rootView.findViewById(R.id.rbIntervalSeconds);
+        rbIntervalMinutes = (RadioButton) rootView.findViewById(R.id.rbIntervalMinutes);
+        rbIntervalHours = (RadioButton) rootView.findViewById(R.id.rbIntervalHours);
+        rbIntervalPositionsSeconds = (RadioButton) rootView.findViewById(R.id.rbIntervalPositionsSeconds);
+        rbIntervalPositionsMinutes = (RadioButton) rootView.findViewById(R.id.rbIntervalPositionsMinutes);
+        rbIntervalPositionsHours = (RadioButton) rootView.findViewById(R.id.rbIntervalPositionsHours);
+        chbInfinity = (CheckBox) rootView.findViewById(R.id.chbInfinity);
+        btnStartSave = (TextView) rootView.findViewById(R.id.btnStartSave);
+        btnLoadSettings = (TextView) rootView.findViewById(R.id.btnLoadSettings);
+        progressSave = (ProgressBar) rootView.findViewById(R.id.progressSave);
+        progressLoad = (ProgressBar) rootView.findViewById(R.id.progressLoad);
+
+        btnLoadSettings.setOnClickListener(this);
+        btnStartSave.setOnClickListener(this);
+        chbInfinity.setOnClickListener(this);
+
+        return rootView;
+    }
+
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
         if (activity.isWaitingForResponseFromFcm) return;
 
-        activity.showFrgmentLoad("Stahuji nastavení", 0, new OnFragmentLoadShowedListener() {
+        activity.showFrgmentLoad("Stahuji nastavení", new OnFragmentLoadShowedListener() {
             @Override
             public void onFragmentLoadShowed() {
                 activity.startTimerService(SERVICE_TIMER_TYPE_SETTINGS);
@@ -76,8 +93,22 @@ public class FragmentSaveToDb extends Fragment implements AppConstants {
         });
     }
 
-    @Click(R.id.btnLoadSettings)
-    void clickStartLoad() {
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.btnLoadSettings:
+                loadSettings();
+                break;
+            case R.id.chbInfinity:
+                etCount.setEnabled(!chbInfinity.isChecked());
+                break;
+            case R.id.btnStartSave:
+                saveSettings();
+                break;
+        }
+    }
+
+    private void loadSettings() {
         if (activity.isWaitingForResponseFromFcm) return;
         Animators.animateButtonClick(btnLoadSettings);
         updateViewsAfterLoadClick(false);
@@ -85,13 +116,7 @@ public class FragmentSaveToDb extends Fragment implements AppConstants {
         activity.sendRequestToFcm(FCM_REQUEST_TYPE_LOAD_SETTINGS, null);
     }
 
-    @Click(R.id.chbInfinity)
-    void clickRbInfinity() {
-        etCount.setEnabled(!chbInfinity.isChecked());
-    }
-
-    @Click(R.id.btnStartSave)
-    void clickStartSave() {
+    private void saveSettings() {
         if (activity.isWaitingForResponseFromFcm) return;
         Animators.animateButtonClick(btnStartSave);
         updateViewsAfterSendClick(false);

@@ -1,46 +1,26 @@
 package com.example.fmdriver.fragments;
 
 import android.content.Context;
-import android.os.CountDownTimer;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
 
 import com.example.fmdriver.MainActivity;
 import com.example.fmdriver.R;
 import com.example.fmdriver.adapters.AdapterDevices;
 
-import org.androidannotations.annotations.AfterViews;
-import org.androidannotations.annotations.EFragment;
-import org.androidannotations.annotations.ViewById;
 
-
-@EFragment(R.layout.fragment_devices)
 public class FragmentDevices extends Fragment implements RecyclerView.OnItemTouchListener {
 
-    @ViewById
     RecyclerView recyclerView;
-
     MainActivity activity;
     AdapterDevices adapter;
-
-    float x1, y1, x2, y2;
-    boolean cancelClick = false;
-
-    CountDownTimer timer = new CountDownTimer(500, 500) {
-        @Override
-        public void onTick(long millisUntilFinished) {
-
-        }
-
-        @Override
-        public void onFinish() {
-            activity.vibrate(100);
-            Log.i("tag_motionevent", "CountDownTimer - onFinish()");
-        }
-    };
 
     @Override
     public void onAttach(Context context) {
@@ -51,8 +31,16 @@ public class FragmentDevices extends Fragment implements RecyclerView.OnItemTouc
         }
     }
 
-    @AfterViews
-    void afterViews() {
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View rootView = inflater.inflate(R.layout.fragment_devices, container, false);
+        recyclerView = (RecyclerView) rootView.findViewById(R.id.recyclerView);
+        return rootView;
+    }
+
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
         updateAdapter();
     }
 

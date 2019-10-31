@@ -5,6 +5,8 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentManager;
@@ -25,6 +27,18 @@ import java.util.List;
 import java.util.Locale;
 
 public class AppUtils implements AppConstants {
+
+    public static boolean isOnline(MainActivity activity) {
+
+        ConnectivityManager cm = (ConnectivityManager) activity.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+
+        if (netInfo != null && netInfo.isConnected()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     public static boolean isFragmentCurrent(String name, FragmentManager fragmentManager) {
         if (fragmentManager.getBackStackEntryCount() != 0) {

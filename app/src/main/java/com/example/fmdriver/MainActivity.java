@@ -16,8 +16,6 @@ import android.os.IBinder;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.support.annotation.Nullable;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -26,7 +24,6 @@ import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -35,21 +32,9 @@ import com.example.fmdriver.adapters.AdapterLog;
 import com.example.fmdriver.customViews.DialogInfo;
 import com.example.fmdriver.customViews.DialogInput;
 import com.example.fmdriver.customViews.DialogYesNo;
-import com.example.fmdriver.fragments.FragmentCheckedPositionDetails;
-import com.example.fmdriver.fragments.FragmentCheckedPositionDetails_;
-import com.example.fmdriver.fragments.FragmentCheckedPositions;
-import com.example.fmdriver.fragments.FragmentCheckedPositions_;
-import com.example.fmdriver.fragments.FragmentDeviceDetail;
-import com.example.fmdriver.fragments.FragmentDeviceDetail_;
-import com.example.fmdriver.fragments.FragmentDevices;
-import com.example.fmdriver.fragments.FragmentDevices_;
 import com.example.fmdriver.fragments.FragmentLoad;
-import com.example.fmdriver.fragments.FragmentLoad_;
 import com.example.fmdriver.fragments.FragmentMap;
 import com.example.fmdriver.fragments.FragmentSaveToDb;
-import com.example.fmdriver.fragments.FragmentSaveToDb_;
-import com.example.fmdriver.fragments.FragmentToken;
-import com.example.fmdriver.fragments.FragmentToken_;
 import com.example.fmdriver.interfaces.AppPrefs_;
 import com.example.fmdriver.listeners.OnAllCheckedPositionsLoadedListener;
 import com.example.fmdriver.listeners.OnAllItemsDeletedListener;
@@ -81,6 +66,8 @@ import com.example.fmdriver.utils.Animators;
 import com.example.fmdriver.utils.AppConstants;
 import com.example.fmdriver.utils.AppUtils;
 import com.example.fmdriver.utils.DateTimeUtils;
+import com.example.fmdriver.utils.FragmentController;
+import com.example.fmdriver.utils.FragmentsNames;
 import com.facebook.stetho.Stetho;
 import com.google.firebase.messaging.RemoteMessage;
 
@@ -105,6 +92,7 @@ import retrofit2.Response;
 @EActivity(R.layout.activity_main)
 public class MainActivity extends AppCompatActivity implements
         AppConstants,
+        FragmentsNames,
         OnCallCanceledListener,
         OnServiceStatusCheckedListener {
 
@@ -152,7 +140,7 @@ public class MainActivity extends AppCompatActivity implements
     @InstanceState
     public boolean isWaitingForResponseFromFcm, isRequestStopSevice;
 
-    public FragmentManager fragmentManager;
+    private FragmentController fragmentController;
 
     @InstanceState
     public boolean
@@ -218,12 +206,13 @@ public class MainActivity extends AppCompatActivity implements
 
     @AfterViews
     void afterViews() {
-        fragmentManager = getSupportFragmentManager();
+        checkOnline(true);
 
         if (isAfterStart) {
             getRegisteredDevices(new OnRegisteredDevicesLoadedListener() {
                 @Override
                 public void onRegisteredDevicesLoaded() {
+                    if (registeredDevices == null) return;
                     int lastSelectedDevicePosition = getDevicePositionInListById(appPrefs.remoteDeviceId().getOr(-1));
                     labelToolbarDevice.setText(registeredDevices.get(lastSelectedDevicePosition).getName());
                     //if (!checkingServiceStatusInProgress) checkServiceStatus();
@@ -303,9 +292,9 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onBackPressed() {
         Log.i(TAG_SERVICE, "MainActivity - onBackPressed()");
-        if (AppUtils.isFragmentCurrent("FragmentLoad_", fragmentManager)) return;
+        if (AppUtils.isFragmentCurrent("FragmentLoad_", getSupportFragmentManager())) return;
 
-        int fragmentsInStack = fragmentManager.getBackStackEntryCount();
+        int fragmentsInStack = getSupportFragmentManager().getBackStackEntryCount();
 
         if (fragmentsInStack == 0) {
             if (appService != null) appService.setRequestStopService();
@@ -313,6 +302,19 @@ public class MainActivity extends AppCompatActivity implements
         }
 
         super.onBackPressed();
+    }
+
+    public FragmentController getFragmentController() {
+        if (this.fragmentController == null) {
+            this.fragmentController = new FragmentController(
+                    this,
+                    getSupportFragmentManager(),
+                    R.id.container,
+                    animShowFragment,
+                    animHideFragment);
+        }
+
+        return fragmentController;
     }
 
     @Click(R.id.labelToolbarDevice)
@@ -418,7 +420,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void callCanceled(int taskType) {
+    public void callCanceled() {
 
     }
 
@@ -459,6 +461,9 @@ public class MainActivity extends AppCompatActivity implements
 
     @Click(R.id.imgMap)
     void clickBtnMap() {
+        Animators.animateButtonClick(imgMap);
+        if (!checkOnline(false)) return;
+
         isRequestLocation = true;
         isRequestStopServiceAfterWork = !isServiceStarted;
 
@@ -467,7 +472,6 @@ public class MainActivity extends AppCompatActivity implements
         if (progressGps != null) progressGps.setVisibility(View.VISIBLE);
 
         if (isWaitingForResponseFromFcm) return;
-        Animators.animateButtonClick(imgMap);
         startTimerService(SERVICE_TIMER_TYPE_LOCATION);
         sendRequestToFcm(FCM_REQUEST_TYPE_LOCATION,null);
     }
@@ -480,36 +484,42 @@ public class MainActivity extends AppCompatActivity implements
 
     @Click(R.id.imgCheckService)
     void clickCheckService() {
+        Animators.animateButtonClick(imgCheckService);
+        if (!checkOnline(false)) return;
+
         if (labelServiceStatus != null) labelServiceStatus.setAlpha(ALPHA_VISIBILITY_GONE);
         if (labelCountDownService != null) labelCountDownService.setVisibility(View.VISIBLE);
         if (progressService != null) progressService.setVisibility(View.VISIBLE);
 
         if (isWaitingForResponseFromFcm) return;
-        Animators.animateButtonClick(imgCheckService);
         startTimerService(SERVICE_TIMER_TYPE_SERVICE);
         sendRequestToFcm(FCM_REQUEST_TYPE_SERVICE_STATUS, null);
     }
 
     @Click(R.id.imgStartStopService)
     void clickStartStopService() {
+        Animators.animateButtonClick(imgStartStopService);
+        if (!checkOnline(false)) return;
+
         if (labelServiceStatus != null) labelServiceStatus.setAlpha(ALPHA_VISIBILITY_GONE);
         if (labelCountDownService != null) labelCountDownService.setVisibility(View.VISIBLE);
         if (progressService != null) progressService.setVisibility(View.VISIBLE);
 
         if (isWaitingForResponseFromFcm) return;
-        Animators.animateButtonClick(imgStartStopService);
         startTimerService(SERVICE_TIMER_TYPE_SERVICE);
         sendRequestToFcm(isServiceStarted ? FCM_REQUEST_TYPE_SERVICE_STOP : FCM_REQUEST_TYPE_SERVICE_START, null);
     }
 
     @Click(R.id.imgStartStopGps)
     void clickBtnStartStopGps() {
+        Animators.animateButtonClick(imgStartStopGps);
+        if (!checkOnline(false)) return;
+
         if (labelGpsStatus != null) labelGpsStatus.setAlpha(ALPHA_VISIBILITY_GONE);
         if (labelCountDownGps != null) labelCountDownGps.setVisibility(View.VISIBLE);
         if (progressGps != null) progressGps.setVisibility(View.VISIBLE);
 
         if (isWaitingForResponseFromFcm) return;
-        Animators.animateButtonClick(imgStartStopGps);
         startTimerService(SERVICE_TIMER_TYPE_GPS);
         sendRequestToFcm(isGpsStarted ? FCM_REQUEST_TYPE_GPS_STOP : FCM_REQUEST_TYPE_GPS_START, null);
     }
@@ -517,20 +527,21 @@ public class MainActivity extends AppCompatActivity implements
     @Click(R.id.imgSettings)
     void clickSaveToDb() {
         Animators.animateButtonClick(imgSettings);
-        showFragmentSaveToDb();
+        if (checkOnline(false)) showFragmentSaveToDb();
     }
 
     @Click(R.id.imgShowData)
     void clickShowData() {
         Animators.animateButtonClick(imgShowData);
-        getAllCheckedPositions(null);
+        if (checkOnline(false)) getAllCheckedPositions(null);
     }
 
     @Click(R.id.imgAlarm)
     void clickBtnAlarm() {
         Animators.animateButtonClick(imgAlarm);
+        if (!checkOnline(false)) return;
 
-        if (isWaitingForResponseFromFcm || isAlarmStarted) {
+            if (isWaitingForResponseFromFcm || isAlarmStarted) {
             appendLog(
                     "Čekám na odpověď serveru. Do té doby není možné odesílat další požadavky",
                     true,
@@ -568,6 +579,9 @@ public class MainActivity extends AppCompatActivity implements
 
     @Click(R.id.imgCall)
     void clickBtnCall() {
+        Animators.animateButtonClick(imgCall);
+        if (!checkOnline(false)) return;
+
         if (isWaitingForResponseFromFcm || isAlarmStarted) {
             appendLog(
                     "Čekám na odpověď serveru. Do té doby není možné odesílat další požadavky",
@@ -575,8 +589,6 @@ public class MainActivity extends AppCompatActivity implements
                     R.color.colorMessageInLogWaitingForResponse);
             return;
         }
-
-        Animators.animateButtonClick(imgCall);
 
         DialogInput.createDialog(this)
                 .setTitle("Telefon")
@@ -620,6 +632,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     public void sendRequestToFcm(int requestType, RequestToFcmData requestToFcmData) {
+        checkOnline(false);
         String token = appPrefs.remoteToken().get();
 
         if (token == null) {
@@ -717,23 +730,27 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @UiThread
-    public void showFrgmentLoad(String labelText, int taskType, OnFragmentLoadShowedListener listener) {
-        Log.i(TAG, "MainActivity - showFrgmentLoad(" + labelText + ")");
+    public void showFrgmentLoad(String labelText, OnFragmentLoadShowedListener listener) {
+        Bundle args = new Bundle();
+        args.putString("labelText", labelText);
+        getFragmentController().showFragment(FRAGMENT_LOAD, args, true);
 
-        FragmentLoad fragmentLoad = (FragmentLoad) fragmentManager.findFragmentByTag("FragmentLoad_");
+        /*
+        FragmentLoad fragmentLoad = (FragmentLoad) getSupportFragmentManager().findFragmentByTag("FragmentLoad_");
 
         if (fragmentLoad == null) {
             fragmentLoad = FragmentLoad_.builder().labelText(labelText).taskType(taskType).build();
-            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+            FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
             fragmentTransaction.setCustomAnimations(animShowFragment, animHideFragment, animShowFragment, animHideFragment);
             fragmentTransaction.add(R.id.container, fragmentLoad, fragmentLoad.getClass().getSimpleName());
             fragmentTransaction.addToBackStack("FragmentLoad_");
             fragmentTransaction.commitAllowingStateLoss();
         } else {
-            int beCount = fragmentManager.getBackStackEntryCount();
-            fragmentManager.popBackStack("FragmentLoad_", 0);
+            int beCount = getSupportFragmentManager().getBackStackEntryCount();
+            getSupportFragmentManager().popBackStack("FragmentLoad_", 0);
             fragmentLoad.setLabel(labelText);
         }
+        */
 
         if (listener != null) listener.onFragmentLoadShowed();
     }
@@ -742,143 +759,55 @@ public class MainActivity extends AppCompatActivity implements
     public void closeFragmentLoad(OnFragmentLoadClosedListener listener) {
         if (isFragmentLoadShowed()) {
             if (getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED))
-                fragmentManager.popBackStack();
+                getSupportFragmentManager().popBackStack();
         }
 
         if (listener != null) listener.onFragmentLoadClosed();
     }
 
     public boolean isFragmentLoadShowed() {
-        int beCount = fragmentManager.getBackStackEntryCount();
+        int beCount = getSupportFragmentManager().getBackStackEntryCount();
         if (beCount == 0) return false;
-        return fragmentManager.getBackStackEntryAt(beCount - 1).getName().equals("FragmentLoad_");
+        return getSupportFragmentManager().getBackStackEntryAt(beCount - 1).getName().equals(FRAGMENT_LOAD);
     }
 
     public void showFragmentMap2(NewLocation newLocation, String marker) {
-        FragmentMap fragmentMap = (FragmentMap) fragmentManager.findFragmentByTag("FragmentMap2");
-
-        if (fragmentMap == null) {
-            fragmentMap = new FragmentMap();
-
-            Bundle args = new Bundle();
-            args.putParcelable("location", newLocation);
-            args.putString("marker", marker);
-            fragmentMap.setArguments(args);
-
-            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-            fragmentTransaction.setCustomAnimations(animShowFragment, animHideFragment, animShowFragment, animHideFragment);
-            fragmentTransaction.add(R.id.container, fragmentMap, "FragmentMap2");
-            fragmentTransaction.addToBackStack("FragmentMap2");
-            fragmentTransaction.commit();
-        } else {
-            int beCount = fragmentManager.getBackStackEntryCount();
-            if (beCount == 0) return;
-            fragmentManager.popBackStack("FragmentMap2", 0);
-        }
+        Bundle args = new Bundle();
+        args.putParcelable("location", newLocation);
+        args.putString("marker", marker);
+        getFragmentController().showFragment(FRAGMENT_MAP, args, true);
     }
 
     public void showFragmentToken(String token) {
-        FragmentToken fragmentToken = (FragmentToken) fragmentManager.findFragmentByTag("FragmentToken_");
-
-        if (fragmentToken == null) {
-            fragmentToken = FragmentToken_.builder().token(token).build();
-            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-            fragmentTransaction.setCustomAnimations(animShowFragment, animHideFragment, animShowFragment, animHideFragment);
-            fragmentTransaction.add(R.id.container, fragmentToken, "FragmentToken_");
-            fragmentTransaction.addToBackStack("FragmentToken_");
-            fragmentTransaction.commit();
-        } else {
-            int beCount = fragmentManager.getBackStackEntryCount();
-            if (beCount == 0) return;
-            fragmentManager.popBackStack("FragmentToken_", 0);
-        }
+        Bundle args = new Bundle();
+        args.putString("token", token);
+        getFragmentController().showFragment(FRAGMENT_TOKEN, args, true);
     }
 
     public void showFragmentSaveToDb() {
-        FragmentSaveToDb fragmentSaveToDb = (FragmentSaveToDb) fragmentManager.findFragmentByTag("FragmentSaveToDb_");
-
-        if (fragmentSaveToDb == null) {
-            fragmentSaveToDb = FragmentSaveToDb_.builder().build();
-            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-            fragmentTransaction.setCustomAnimations(animShowFragment, animHideFragment, animShowFragment, animHideFragment);
-            fragmentTransaction.add(R.id.container, fragmentSaveToDb, "FragmentSaveToDb_");
-            fragmentTransaction.addToBackStack("FragmentSaveToDb_");
-            fragmentTransaction.commit();
-        } else {
-            int beCount = fragmentManager.getBackStackEntryCount();
-            if (beCount == 0) return;
-            fragmentManager.popBackStack("FragmentSaveToDb_", 0);
-        }
+        getFragmentController().showFragment(FRAGMENT_SAVE_TO_DB, null, true);
     }
 
     public void showCheckedPositions() {
-
-        FragmentCheckedPositions fragmentCheckedPositions = (FragmentCheckedPositions) fragmentManager.findFragmentByTag("FragmentCheckedPositions_");
-
-        if (fragmentCheckedPositions == null) {
-            fragmentCheckedPositions = FragmentCheckedPositions_.builder().items(itemsCheckedPositions).build();
-            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-            fragmentTransaction.setCustomAnimations(animShowFragment, animHideFragment, animShowFragment, animHideFragment);
-            fragmentTransaction.add(R.id.container, fragmentCheckedPositions, "FragmentCheckedPositions_");
-            fragmentTransaction.addToBackStack("FragmentCheckedPositions_");
-            fragmentTransaction.commit();
-        } else {
-            int beCount = fragmentManager.getBackStackEntryCount();
-            if (beCount == 0) return;
-            fragmentManager.popBackStack("FragmentCheckedPositions_", 0);
-            fragmentCheckedPositions.updateFragment(new ArrayList<PositionChecked>(null));
-        }
+        Bundle args = new Bundle();
+        args.putParcelableArrayList("itemsCheckedPositions", itemsCheckedPositions);
+        getFragmentController().showFragment(FRAGMENT_CHECKED_POSITIONS, args, true);
     }
 
     public void showCheckedPositionDetails(PositionChecked positionChecked) {
-        FragmentCheckedPositionDetails fragmentCheckedPositionDetails = (FragmentCheckedPositionDetails) fragmentManager.findFragmentByTag("FragmentCheckedPositionDetails_");
-
-        if (fragmentCheckedPositionDetails == null) {
-            fragmentCheckedPositionDetails = FragmentCheckedPositionDetails_.builder().positionChecked(positionChecked).build();
-            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-            fragmentTransaction.setCustomAnimations(animShowFragment, animHideFragment, animShowFragment, animHideFragment);
-            fragmentTransaction.add(R.id.container, fragmentCheckedPositionDetails, "FragmentCheckedPositionDetails_");
-            fragmentTransaction.addToBackStack("FragmentCheckedPositionDetails_");
-            fragmentTransaction.commit();
-        } else {
-            int beCount = fragmentManager.getBackStackEntryCount();
-            if (beCount == 0) return;
-            fragmentManager.popBackStack("FragmentCheckedPositionDetails_", 0);
-        }
+        Bundle args = new Bundle();
+        args.putParcelable("positionChecked", positionChecked);
+        getFragmentController().showFragment(FRAGMENT_CHECKED_POSITION_DETAIL, args, true);
     }
 
     public void showFragmentDevices() {
-        FragmentDevices fragmentDevices = (FragmentDevices) fragmentManager.findFragmentByTag("FragmentDevices_");
-
-        if (fragmentDevices == null) {
-            fragmentDevices = FragmentDevices_.builder().build();
-            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-            fragmentTransaction.setCustomAnimations(animShowFragment, animHideFragment, animShowFragment, animHideFragment);
-            fragmentTransaction.add(R.id.container, fragmentDevices, "FragmentDevices_");
-            fragmentTransaction.addToBackStack("FragmentDevices_");
-            fragmentTransaction.commit();
-        } else {
-            int beCount = fragmentManager.getBackStackEntryCount();
-            if (beCount == 0) return;
-            fragmentManager.popBackStack("FragmentDevices_", 0);
-        }
+        getFragmentController().showFragment(FRAGMENT_DEVICES, null, true);
     }
 
     public void showFragmentDeviceDetail(Device device) {
-        FragmentDeviceDetail fragmentDeviceDetail = (FragmentDeviceDetail) fragmentManager.findFragmentByTag("FragmentDeviceDetail_");
-
-        if (fragmentDeviceDetail == null) {
-            fragmentDeviceDetail = FragmentDeviceDetail_.builder().device(device).build();
-            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-            fragmentTransaction.setCustomAnimations(animShowFragment, animHideFragment, animShowFragment, animHideFragment);
-            fragmentTransaction.add(R.id.container, fragmentDeviceDetail, "FragmentDeviceDetail_");
-            fragmentTransaction.addToBackStack("FragmentDeviceDetail_");
-            fragmentTransaction.commit();
-        } else {
-            int beCount = fragmentManager.getBackStackEntryCount();
-            if (beCount == 0) return;
-            fragmentManager.popBackStack("FragmentDeviceDetail_", 0);
-        }
+        Bundle args = new Bundle();
+        args.putParcelable("device", device);
+        getFragmentController().showFragment(FRAGMENT_DEVICE_DETAIL, args, true);
     }
 
     private void registerLocationReceiver() {
@@ -948,7 +877,7 @@ public class MainActivity extends AppCompatActivity implements
                             Log.i(TAG, "LocacionReceiver() - onReceive() - newLocation:");
                             Log.i(TAG, newLocation.toString());
 
-                            FragmentMap fragmentMap = (FragmentMap) fragmentManager.findFragmentByTag("FragmentMap2");
+                            FragmentMap fragmentMap = (FragmentMap) getSupportFragmentManager().findFragmentByTag("FragmentMap2");
 
                             if (fragmentMap == null) showFragmentMap2(newLocation, "tady");
                             else fragmentMap.updateMap(newLocation, "tady");
@@ -1032,14 +961,9 @@ public class MainActivity extends AppCompatActivity implements
                 closeFragmentLoad(new OnFragmentLoadClosedListener() {
                     @Override
                     public void onFragmentLoadClosed() {
-                        final FragmentSaveToDb fragmentSaveToDb = (FragmentSaveToDb) fragmentManager.findFragmentByTag("FragmentSaveToDb_");
+                        FragmentSaveToDb fragmentSaveToDb = (FragmentSaveToDb) getSupportFragmentManager().findFragmentByTag(FRAGMENT_SAVE_TO_DB);
                         if (fragmentSaveToDb == null) return;
-                        if (!AppUtils.isFragmentCurrent("FragmentSaveToDb_", fragmentManager))
-                            return;
-
-                        fragmentSaveToDb.updateViewsAfterSendClick(true);
-                        fragmentSaveToDb.updateViewsAfterLoadClick(true);
-
+                        if (fragmentSaveToDb != null) fragmentSaveToDb.afterLoaded();
                         //AppUtils.showRequestTimerError(MainActivity.this);
                     }
                 });
@@ -1098,12 +1022,9 @@ public class MainActivity extends AppCompatActivity implements
                             .locationIntervalTimeUnit().put(locationsIntervalTimeUnit)
                             .apply();
 
-                    FragmentSaveToDb fragmentSaveToDb = (FragmentSaveToDb) fragmentManager.findFragmentByTag("FragmentSaveToDb_");
-                    if (fragmentSaveToDb != null) {
-                        fragmentSaveToDb.afterLoaded();
-                    }
-
-
+                    FragmentSaveToDb fragmentSaveToDb = (FragmentSaveToDb) getSupportFragmentManager().findFragmentByTag(FRAGMENT_SAVE_TO_DB);
+                    if (fragmentSaveToDb == null) return;
+                    if (fragmentSaveToDb != null) fragmentSaveToDb.afterLoaded();
                 } catch (NullPointerException e) {
                     DialogInfo.createDialog(MainActivity.this)
                             .setTitle("Info")
@@ -1227,10 +1148,10 @@ public class MainActivity extends AppCompatActivity implements
                         }
                         break;
                     case SERVICE_TIMER_TYPE_SETTINGS:
-                        final FragmentSaveToDb fragmentSaveToDb = (FragmentSaveToDb) fragmentManager.findFragmentByTag("FragmentSaveToDb_");
+                        final FragmentSaveToDb fragmentSaveToDb = (FragmentSaveToDb) getSupportFragmentManager().findFragmentByTag(FRAGMENT_SAVE_TO_DB);
 
                         if (progress != SERVICE_COUNTDOWN_IS_OVER && progress != SERVICE_COUNTDOWN_IS_OFF) {
-                            FragmentLoad fragmentLoad = (FragmentLoad) fragmentManager.findFragmentByTag("FragmentLoad_");
+                            FragmentLoad fragmentLoad = (FragmentLoad) getSupportFragmentManager().findFragmentByTag("FragmentLoad_");
 
                             if (fragmentLoad != null) {
                                 fragmentLoad.updateLabel("Stahuji nastavení (" + (progress / 1000) + ")");
@@ -1240,8 +1161,7 @@ public class MainActivity extends AppCompatActivity implements
                                 @Override
                                 public void onFragmentLoadClosed() {
                                     if (fragmentSaveToDb == null) return;
-                                    if (!AppUtils.isFragmentCurrent("FragmentSaveToDb_", fragmentManager))
-                                        return;
+                                    if (!AppUtils.isFragmentCurrent(FRAGMENT_SAVE_TO_DB, getSupportFragmentManager())) return;
 
                                     fragmentSaveToDb.updateViewsAfterSendClick(true);
                                     fragmentSaveToDb.updateViewsAfterLoadClick(true);
@@ -1364,7 +1284,7 @@ public class MainActivity extends AppCompatActivity implements
         ApiDatabase api = ControllerDatabase.getRetrofitInstance().create(ApiDatabase.class);
         final Call<ResponseAllCheckedPositions> call = api.getAllCheckedPositions(appPrefs.remoteDeviceId().get());
 
-        showFrgmentLoad("Stahuji data", 0, new OnFragmentLoadShowedListener() {
+        showFrgmentLoad("Stahuji data", new OnFragmentLoadShowedListener() {
             @Override
             public void onFragmentLoadShowed() {
                 call.enqueue(new Callback<ResponseAllCheckedPositions>() {
@@ -1440,7 +1360,7 @@ public class MainActivity extends AppCompatActivity implements
         final ApiDatabase api = ControllerDatabase.getRetrofitInstance().create(ApiDatabase.class);
         final Call<ResponseDeletePosition> call = api.deleteAllCheckedPositions(appPrefs.remoteDeviceId().get());
 
-        showFrgmentLoad("Mazání všech dat...", 0, new OnFragmentLoadShowedListener() {
+        showFrgmentLoad("Mazání všech dat...", new OnFragmentLoadShowedListener() {
             @Override
             public void onFragmentLoadShowed() {
                 call.enqueue(new Callback<ResponseDeletePosition>() {
@@ -1597,7 +1517,7 @@ public class MainActivity extends AppCompatActivity implements
         ApiDatabase api = ControllerDatabase.getRetrofitInstance().create(ApiDatabase.class);
         final Call<ResponseAllDevices> call = api.getAllDevices();
 
-        showFrgmentLoad("Stahuji seznam registrovaných zařízení", 0, new OnFragmentLoadShowedListener() {
+        showFrgmentLoad("Stahuji seznam registrovaných zařízení", new OnFragmentLoadShowedListener() {
             @Override
             public void onFragmentLoadShowed() {
                 call.enqueue(new Callback<ResponseAllDevices>() {
@@ -1781,5 +1701,22 @@ public class MainActivity extends AppCompatActivity implements
         } else {
             v.vibrate(length);
         }
+    }
+
+    public boolean checkOnline(final boolean closeIfOffline) {
+        if (!AppUtils.isOnline(this)) {
+            DialogInfo.createDialog(this)
+                    .setTitle("Chyba")
+                    .setMessage("Není dostupné připojení k internetu." + (closeIfOffline ? " Aplikace bude ukončena" : ""))
+                    .setListener(new DialogInfo.OnDialogClosedListener() {
+                        @Override
+                        public void onDialogClosed() {
+                            if (closeIfOffline) finish();
+                        }
+                    }).show();
+            return false;
+        }
+
+        return true;
     }
 }

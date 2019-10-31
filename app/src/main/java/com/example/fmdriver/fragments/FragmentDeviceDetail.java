@@ -1,8 +1,13 @@
 package com.example.fmdriver.fragments;
 
 import android.content.Context;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -18,24 +23,17 @@ import com.example.fmdriver.retrofit.ApiDatabase;
 import com.example.fmdriver.retrofit.ControllerDatabase;
 import com.example.fmdriver.retrofit.responses.ResponseUpdateDevice;
 import com.example.fmdriver.utils.AppConstants;
+import com.example.fmdriver.utils.FragmentsNames;
 
-import org.androidannotations.annotations.AfterViews;
-import org.androidannotations.annotations.Click;
-import org.androidannotations.annotations.EFragment;
-import org.androidannotations.annotations.FragmentArg;
-import org.androidannotations.annotations.ViewById;
 
 import java.io.IOException;
 
-import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-@EFragment(R.layout.fragment_device_detail)
-public class FragmentDeviceDetail extends Fragment implements AppConstants {
+public class FragmentDeviceDetail extends Fragment implements AppConstants, FragmentsNames {
 
-    @ViewById
     TextView
             labelDeviceName,
             labelDeviceDescription,
@@ -44,13 +42,12 @@ public class FragmentDeviceDetail extends Fragment implements AppConstants {
             labelDeviceId,
             labelToken;
 
-    @ViewById
     ImageView imgEditDescription;
 
     MainActivity activity;
 
-    @FragmentArg
     Device device;
+    Bundle args;
 
     @Override
     public void onAttach(Context context) {
@@ -61,18 +58,37 @@ public class FragmentDeviceDetail extends Fragment implements AppConstants {
         }
     }
 
-    @AfterViews
-    void afterViews() {
-        labelDeviceName.setText(device.getName());
-        labelDeviceDescription.setText(device.getDescription());
-        labelDate.setText(device.getDate());
-        labelAndroidId.setText(device.getDeviceIdentification().getAndroidId());
-        labelDeviceId.setText(device.getDeviceIdentification().getDeviceId());
-        labelToken.setText(device.getToken());
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View rootView = inflater.inflate(R.layout.fragment_device_detail, container, false);
+        args = getArguments();
+        if (args != null) device = args.getParcelable("device");
+
+        labelDeviceName = (TextView) rootView.findViewById(R.id.labelDeviceName);
+        labelDeviceDescription = (TextView) rootView.findViewById(R.id.labelDeviceDescription);
+        labelDate = (TextView) rootView.findViewById(R.id.labelDate);
+        labelAndroidId = (TextView) rootView.findViewById(R.id.labelAndroidId);
+        labelDeviceId = (TextView) rootView.findViewById(R.id.labelDeviceId);
+        labelToken = (TextView) rootView.findViewById(R.id.labelToken);
+        imgEditDescription = (ImageView) rootView.findViewById(R.id.imgEditDescription);
+
+        imgEditDescription.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                clickImgEditDescription();
+            }
+        });
+
+        return rootView;
     }
 
-    @Click(R.id.imgEditDescription)
-    void clickImgEditDescription() {
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        setViews();
+    }
+
+    private void clickImgEditDescription() {
         DialogTextInput.createDialog(activity)
                 .setTitle("Popis zařízení")
                 .setMessage("Vlož popis zařízení:")
@@ -83,7 +99,7 @@ public class FragmentDeviceDetail extends Fragment implements AppConstants {
                         ApiDatabase api = ControllerDatabase.getRetrofitInstance().create(ApiDatabase.class);
                         final Call<ResponseUpdateDevice> call = api.updateDeviceDescription("" + device.getId(), input);
 
-                        activity.showFrgmentLoad("Odesílám změny...", 0, new OnFragmentLoadShowedListener() {
+                        activity.showFrgmentLoad("Odesílám změny...", new OnFragmentLoadShowedListener() {
                             @Override
                             public void onFragmentLoadShowed() {
                                 call.enqueue(new Callback<ResponseUpdateDevice>() {
@@ -119,7 +135,7 @@ public class FragmentDeviceDetail extends Fragment implements AppConstants {
                                                     activity.appendLog("Aktualizace popisu proběhla v pořádku", true);
                                                     update(updatedDevice);
 
-                                                    FragmentDevices fragmentDevices = (FragmentDevices) activity.fragmentManager.findFragmentByTag("FragmentDevices_");
+                                                    FragmentDevices fragmentDevices = (FragmentDevices) activity.getSupportFragmentManager().findFragmentByTag(FRAGMENT_DEVICES);
                                                     if (fragmentDevices != null) fragmentDevices.getAdapter().notifyDataSetChanged();
                                                 }
                                             });
@@ -155,8 +171,17 @@ public class FragmentDeviceDetail extends Fragment implements AppConstants {
                 }).show();
     }
 
+    private void setViews() {
+        labelDeviceName.setText(device.getName());
+        labelDeviceDescription.setText(device.getDescription());
+        labelDate.setText(device.getDate());
+        labelAndroidId.setText(device.getDeviceIdentification().getAndroidId());
+        labelDeviceId.setText(device.getDeviceIdentification().getDeviceId());
+        labelToken.setText(device.getToken());
+    }
+
     public void update(Device device) {
         this.device = device;
-        afterViews();
+        setViews();
     }
 }

@@ -1,33 +1,27 @@
 package com.example.fmdriver.fragments;
 
 import android.content.Context;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.example.fmdriver.MainActivity;
 import com.example.fmdriver.R;
 import com.example.fmdriver.utils.Animators;
 
-import org.androidannotations.annotations.AfterViews;
-import org.androidannotations.annotations.Click;
-import org.androidannotations.annotations.EFragment;
-import org.androidannotations.annotations.FragmentArg;
-import org.androidannotations.annotations.ViewById;
 
-@EFragment(R.layout.fragment_token)
 public class FragmentToken extends Fragment {
 
+    TextView labelToken,  btnClose;
+
     MainActivity activity;
-
-    @FragmentArg
+    Bundle args;
     String token;
-
-    @ViewById
-    TextView labelToken;
-
-    @ViewById
-    TextView btnClose;
 
 
     @Override
@@ -39,15 +33,30 @@ public class FragmentToken extends Fragment {
         }
     }
 
-    @AfterViews
-    void afterViews() {
-        labelToken.setText(token);
-        Log.i("ukaz_token", token);
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View rootView = inflater.inflate(R.layout.fragment_token, container, false);
+        args = getArguments();
+        if (args != null) token = args.getString("token");
+
+        labelToken = (TextView) rootView.findViewById(R.id.labelToken);
+        btnClose = (TextView) rootView.findViewById(R.id.btnClose);
+
+        btnClose.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Animators.animateButtonClick(btnClose);
+                activity.onBackPressed();
+            }
+        });
+
+        return rootView;
     }
 
-    @Click(R.id.btnClose)
-    void clickBack() {
-        Animators.animateButtonClick(btnClose);
-        activity.onBackPressed();
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        labelToken.setText(token);
+        Log.i("ukaz_token", token);
     }
 }
