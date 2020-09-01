@@ -70,10 +70,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService impleme
                     }
 
                     int responseType = 0;
+                    int databaseIdOfMessageSender = -1;
+                    String androidIdOfMessageSender = data.get(KEY_SENDER_ANDROID_ID);
 
                     if (keys.contains(KEY_RESPONSE_TYPE)) {
                         try {
                             responseType = Integer.parseInt(data.get(KEY_RESPONSE_TYPE));
+                            databaseIdOfMessageSender = Integer.parseInt(data.get(KEY_SENDER_DATABASE_ID));
                         } catch (NumberFormatException e) {
                             Log.i(TAG, "NumberFormatException: " + e.getMessage());
                             return;
@@ -83,6 +86,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService impleme
                     }
 
                     Log.i(TAG, "responseType: " + AppUtils.responseTypeToString(responseType));
+                    Log.i(TAG, "sender androidId: " + androidIdOfMessageSender);
 
                     Intent intent;
 
@@ -94,6 +98,9 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService impleme
                             intent.putExtra(KEY_MESSAGE, data.get(KEY_MESSAGE));
                             intent.putExtra(KEY_SERVICE_STATUS, data.get(KEY_SERVICE_STATUS));
                             intent.putExtra(KEY_GPS_STATUS, data.get(KEY_GPS_STATUS));
+                            intent.putExtra(KEY_SENDER_DATABASE_ID, databaseIdOfMessageSender);
+                            intent.putExtra(KEY_SENDER_ANDROID_ID, androidIdOfMessageSender);
+                            intent.putExtra(KEY_SENDER_FCM_TOKEN, data.get(KEY_SENDER_FCM_TOKEN));
                             LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
                             break;
                         case FCM_RESPONSE_GPS_START:

@@ -12,11 +12,16 @@ public class ResponseAllCheckedPositions {
     @SerializedName("message")
     private String message;
 
+    @SerializedName("count")
+    private int count;
+
+
     public ResponseAllCheckedPositions() {}
 
-    public ResponseAllCheckedPositions(List<ResponseCheckedPosition> positions, String message) {
+    public ResponseAllCheckedPositions(List<ResponseCheckedPosition> positions, String message, int count) {
         this.positions = positions;
         this.message = message;
+        this.count = count;
     }
 
     public List<ResponseCheckedPosition> getPositions() {
@@ -33,5 +38,13 @@ public class ResponseAllCheckedPositions {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public int getCount() {
+        return count;
+    }
+
+    public void setCount(int count) {
+        this.count = count;
     }
 }

@@ -89,6 +89,14 @@
                 android:textColor="#FFC107"
                 android:textSize="18sp" />
 
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="5dp"
+                android:background="#535353">
+
+            </View>
+
             <TextView
                 android:id="@+id/titleDate"
                 android:layout_width="match_parent"
@@ -108,6 +116,14 @@
                 android:text="Datum registrace"
                 android:textColor="#FFC107"
                 android:textSize="18sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="5dp"
+                android:background="#535353">
+
+            </View>
 
             <TextView
                 android:id="@+id/titleAndroidId"
@@ -129,6 +145,14 @@
                 android:textColor="#FFC107"
                 android:textSize="18sp" />
 
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="5dp"
+                android:background="#535353">
+
+            </View>
+
             <TextView
                 android:id="@+id/titleDeviceId"
                 android:layout_width="match_parent"
@@ -149,6 +173,14 @@
                 android:textColor="#FFC107"
                 android:textSize="18sp" />
 
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="5dp"
+                android:background="#535353">
+
+            </View>
+
             <TextView
                 android:id="@+id/titleToken"
                 android:layout_width="match_parent"
@@ -168,46 +200,6 @@
                 android:text="FCM Token"
                 android:textColor="#FFC107"
                 android:textSize="18sp" />
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="5dp"
-                android:background="#535353">
-
-            </View>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="5dp"
-                android:background="#535353">
-
-            </View>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="5dp"
-                android:background="#535353">
-
-            </View>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="5dp"
-                android:background="#535353">
-
-            </View>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="5dp"
-                android:background="#535353">
-
-            </View>
 
         </LinearLayout>
 

@@ -6,7 +6,6 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 
-import com.example.fmdriver.R;
 import com.example.fmdriver.fragments.FragmentCheckedPositionDetails;
 import com.example.fmdriver.fragments.FragmentCheckedPositions;
 import com.example.fmdriver.fragments.FragmentDeviceDetail;
@@ -15,7 +14,7 @@ import com.example.fmdriver.fragments.FragmentLoad;
 import com.example.fmdriver.fragments.FragmentMap;
 import com.example.fmdriver.fragments.FragmentSaveToDb;
 import com.example.fmdriver.fragments.FragmentToken;
-import com.example.fmdriver.objects.NewLocation;
+
 
 public class FragmentController implements FragmentsNames {
 
@@ -67,6 +66,10 @@ public class FragmentController implements FragmentsNames {
         }
 
         return false;
+    }
+
+    public Fragment findFragmentByName(String fragmentName) {
+        return fragmentManager.findFragmentByTag(fragmentName);
     }
 
     public void showFragment(String fragmentName, Bundle args, boolean addToBackStack) {

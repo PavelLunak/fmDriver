@@ -13,4 +13,8 @@
     <color name="colorDeviceSpinnerCurrentItemBg">#C7F3FF</color>
     <color name="colorDeviceOdd">#000000</color>
     <color name="colorDeviceEven">#303030</color>
+    <color name="colorBgCheckedPositionSelected">#AC9C00</color>
+    <color name="colorBgCheckedPositionDefault">#000000</color>
+    <color name="colorDeviceItemStatusStoped">#353500</color>
+    <color name="colorDeviceItemStatusStarted">#FFFF00</color>
 </resources>

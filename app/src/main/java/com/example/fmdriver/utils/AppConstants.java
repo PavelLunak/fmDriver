@@ -11,6 +11,7 @@ public interface AppConstants {
 
     String TAG = "log_tag";
     String TAG_SERVICE = "log_tag_service";
+    String TAG_DB_INTERNAL = "log_tag_db_internal";
     String TAG_DB = "log_tag_db";
 
     int LOCATION_DEFAULT_INTERVAL = 1000;
@@ -18,6 +19,10 @@ public interface AppConstants {
 
     long MAX_TIME_FOR_WAITING_FCM_RESPONSE = 11000;
     long MAX_TIME_FOR_WAITING_FCM_RESPONSE_LOCATION_CREATE = 21000;
+
+    int MAX_CHECKED_POSITIONS_ITEMS_PER_PAGE = 50;
+
+    int FCM_MESSAGE_TIME_TO_LIVE = 20;
 
     int FCM_REQUEST_TYPE_SERVICE_STATUS = 1;
     int FCM_REQUEST_TYPE_SERVICE_START = 2;
@@ -48,9 +53,11 @@ public interface AppConstants {
     int DB_SETTINGS_UPDATED_ERROR = 0;
 
     String KEY_RESPONSE_TYPE = "responseType";
+    String KEY_SENDER_DATABASE_ID = "thisDatabaseId";
+    String KEY_SENDER_ANDROID_ID = "thisAndroidId";
     String KEY_RESPONSE_SERVICE_STATUS = "key_service_status";
     String KEY_DATA = "data";
-    String KEY_TOKEN_FOR_RESPONSE = "thisFcmToken";
+    String KEY_SENDER_FCM_TOKEN = "thisFcmToken";
     String KEY_LOCATION_DISABLED = "gps_disabled";
     String KEY_SAVE_NEW_DB_SETTINGS = "db_settings";
     String KEY_DB_ENABLED = "savingToDatabaseEnabled";
@@ -101,6 +108,7 @@ public interface AppConstants {
 
     int STARTED = 1;
     int STOPED = 0;
+    int UNKNOWN = -1;
 
     int COUNT_OF_LOCATIONS_INFINITY = -2;
 

@@ -5,15 +5,62 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@color/colorDeviceOdd"
-    android:padding="5dp"
+    android:paddingStart="5dp"
+    android:paddingLeft="5dp"
+    android:paddingTop="5dp"
+    android:paddingEnd="5dp"
     android:paddingRight="5dp">
 
     <ImageView
         android:id="@+id/imgItem"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
+        android:layout_centerVertical="false"
         app:srcCompat="@drawable/ic_item" />
+
+    <TextView
+        android:id="@+id/labelServiceStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:text="S"
+        android:textColor="@color/colorDeviceItemStatusStarted"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/labelGpsStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="5dp"
+        android:layout_marginRight="5dp"
+        android:layout_toStartOf="@id/labelServiceStatus"
+        android:layout_toLeftOf="@id/labelServiceStatus"
+        android:text="G"
+        android:textColor="@color/colorDeviceItemStatusStoped"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/labelStatusUnknown"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="5dp"
+        android:layout_marginRight="5dp"
+        android:layout_toStartOf="@id/labelGpsStatus"
+        android:layout_toLeftOf="@id/labelGpsStatus"
+        android:text="?"
+        android:textColor="@color/colorDeviceItemStatusStoped"
+        android:textStyle="bold" />
+
+    <ProgressBar
+        android:id="@+id/progressStatus"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignStart="@id/labelGpsStatus"
+        android:layout_alignTop="@id/labelGpsStatus"
+        android:layout_alignBottom="@id/labelGpsStatus"
+        android:visibility="gone" />
 
     <TextView
         android:id="@+id/labelDeviceName"
@@ -21,6 +68,9 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
         android:layout_marginLeft="10dp"
+        android:layout_marginEnd="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_toLeftOf="@id/labelDate"
         android:layout_toRightOf="@id/imgItem"
         android:text="TextView"
         android:textColor="#ECECEC"
@@ -30,9 +80,10 @@
         android:id="@+id/labelDate"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_below="@id/labelDeviceName"
         android:layout_alignParentEnd="true"
         android:layout_alignParentRight="true"
-        android:layout_alignParentBottom="true"
+        android:layout_alignParentBottom="false"
         android:text="TextView"
         android:textColor="#ECECEC"
         android:textSize="12sp" />
@@ -51,5 +102,13 @@
         android:text="TextView"
         android:textColor="#FFDE7D"
         android:textSize="12sp" />
+
+    <View
+        android:id="@+id/divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_below="@id/labelDeviceDescription"
+        android:layout_marginTop="5dp"
+        android:background="#4B4B4B" />
 
 </RelativeLayout>

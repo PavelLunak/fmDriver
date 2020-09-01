@@ -84,9 +84,9 @@ public class AdapterCheckedPositions extends RecyclerView.Adapter<AdapterChecked
         holder.labelPosItemAccuracy.setText("Přesnost: " + gpsPosition.getAccuracy() + "m");
 
         if (gpsPosition.isChecked()) {
-            holder.root.setBackgroundColor(0xFFFFFC9F);
+            holder.root.setBackgroundColor(activity.getResources().getColor(R.color.colorBgCheckedPositionSelected));
         } else {
-            holder.root.setBackgroundColor(0xFFFFFF);
+            holder.root.setBackgroundColor(activity.getResources().getColor(R.color.colorBgCheckedPositionDefault));
         }
 
         holder.imgShowOnMap.setOnClickListener(new View.OnClickListener() {

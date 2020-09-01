@@ -7,8 +7,9 @@ import org.androidannotations.annotations.sharedpreferences.SharedPref;
 @SharedPref
 public interface AppPrefs {
     String fcmToken();
-    String remoteToken();
-    int remoteDeviceId();
+    String actualRemoteToken();
+    int actualRemoteDeviceId();   //Id v tabulce v externí databázi
+    String actualRemoteAndroidId();
     long locationInterval();
     int locationIntervalTimeUnit();
     boolean savingToDatabaseEnabled();

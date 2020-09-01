@@ -16,6 +16,12 @@ public interface ApiDatabase {
     @GET("checked_positions.php?all_checked_positions")
     Call<ResponseAllCheckedPositions> getAllCheckedPositions(@Query("device_id") int deviceId);
 
+    @GET("checked_positions.php?checked_positions_limit")
+    Call<ResponseAllCheckedPositions> getCheckedPositionsWithLimit(
+            @Query("device_id") int deviceId,
+            @Query("limit") int limit,
+            @Query("offset") int offset);
+
     @GET("checked_positions.php")
     Call<ResponseBody> deleteCheckedPosition(@Query("delete_checked_position") String id);
 

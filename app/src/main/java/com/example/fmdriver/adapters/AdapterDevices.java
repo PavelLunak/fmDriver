@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -18,6 +19,10 @@ public class AdapterDevices extends RecyclerView.Adapter<AdapterDevices.MyViewHo
 
     static class MyViewHolder extends RecyclerView.ViewHolder {
         RelativeLayout root;
+        TextView labelServiceStatus;
+        TextView labelGpsStatus;
+        TextView labelStatusUnknown;
+        ProgressBar progressStatus;
         TextView labelDeviceName;
         TextView labelDate;
         TextView labelDeviceDescription;
@@ -40,6 +45,10 @@ public class AdapterDevices extends RecyclerView.Adapter<AdapterDevices.MyViewHo
         MyViewHolder vh = new MyViewHolder(v);
 
         vh.root = (RelativeLayout) v.findViewById(R.id.root);
+        vh.labelServiceStatus = (TextView) v.findViewById(R.id.labelServiceStatus);
+        vh.labelStatusUnknown = (TextView) v.findViewById(R.id.labelStatusUnknown);
+        vh.progressStatus = (ProgressBar) v.findViewById(R.id.progressStatus);
+        vh.labelGpsStatus = (TextView) v.findViewById(R.id.labelGpsStatus);
         vh.labelDeviceName = (TextView) v.findViewById(R.id.labelDeviceName);
         vh.labelDate = (TextView) v.findViewById(R.id.labelDate);
         vh.labelDeviceDescription = (TextView) v.findViewById(R.id.labelDeviceDescription);
@@ -64,7 +73,19 @@ public class AdapterDevices extends RecyclerView.Adapter<AdapterDevices.MyViewHo
             holder.imgItem.setImageDrawable(activity.getResources().getDrawable(R.drawable.ic_item));
         }
 
-        holder.root.setBackgroundColor(activity.getResources().getColor(isEven(position) ? R.color.colorDeviceEven : R.color.colorDeviceOdd));
+        if (!device.isServiceStatusUnknown()) {
+            holder.labelServiceStatus.setTextColor(activity.getResources().getColor(device.isServiceIsStarted() ? R.color.colorDeviceItemStatusStarted : R.color.colorDeviceItemStatusStoped));
+            holder.labelGpsStatus.setTextColor(activity.getResources().getColor(device.isGpsIsStarted() ? R.color.colorDeviceItemStatusStarted : R.color.colorDeviceItemStatusStoped));
+
+            holder.labelServiceStatus.setTextColor(activity.getResources().getColor(device.isServiceIsStarted() ? R.color.colorDeviceItemStatusStarted : R.color.colorDeviceItemStatusStoped));
+            holder.labelGpsStatus.setTextColor(activity.getResources().getColor(device.isGpsIsStarted() ? R.color.colorDeviceItemStatusStarted : R.color.colorDeviceItemStatusStoped));
+        } else {
+            holder.labelServiceStatus.setTextColor(activity.getResources().getColor(R.color.colorDeviceItemStatusStoped));
+            holder.labelGpsStatus.setTextColor(activity.getResources().getColor(R.color.colorDeviceItemStatusStoped));
+            holder.labelStatusUnknown.setTextColor(activity.getResources().getColor(R.color.colorDeviceItemStatusStarted));
+        }
+
+        holder.root.setBackgroundColor(activity.getResources().getColor(R.color.colorDeviceOdd/*isEven(position) ? R.color.colorDeviceEven : R.color.colorDeviceOdd*/));
     }
 
     public Device getItem(int position) {

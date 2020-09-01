@@ -88,7 +88,7 @@ public class FragmentSaveToDb extends Fragment implements AppConstants, View.OnC
             @Override
             public void onFragmentLoadShowed() {
                 activity.startTimerService(SERVICE_TIMER_TYPE_SETTINGS);
-                activity.sendRequestToFcm(FCM_REQUEST_TYPE_LOAD_SETTINGS, null);
+                activity.sendRequestToFcm(activity.appPrefs.actualRemoteToken().get(), FCM_REQUEST_TYPE_LOAD_SETTINGS, null);
             }
         });
     }
@@ -113,7 +113,7 @@ public class FragmentSaveToDb extends Fragment implements AppConstants, View.OnC
         Animators.animateButtonClick(btnLoadSettings);
         updateViewsAfterLoadClick(false);
         activity.startTimerService(AppConstants.SERVICE_TIMER_TYPE_SETTINGS);
-        activity.sendRequestToFcm(FCM_REQUEST_TYPE_LOAD_SETTINGS, null);
+        activity.sendRequestToFcm(activity.appPrefs.actualRemoteToken().get(), FCM_REQUEST_TYPE_LOAD_SETTINGS, null);
     }
 
     private void saveSettings() {
@@ -181,7 +181,7 @@ public class FragmentSaveToDb extends Fragment implements AppConstants, View.OnC
                 timeUnitPositons);
 
         activity.startTimerService(AppConstants.SERVICE_TIMER_TYPE_SETTINGS);
-        activity.sendRequestToFcm(FCM_REQUEST_TYPE_SETTINGS_DATABASE, request);
+        activity.sendRequestToFcm(activity.appPrefs.actualRemoteToken().get(), FCM_REQUEST_TYPE_SETTINGS_DATABASE, request);
     }
 
     public void afterLoaded() {

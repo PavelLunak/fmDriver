@@ -232,7 +232,7 @@ public class AppUtils implements AppConstants {
     public static void showRequestTimerError(MainActivity activity) {
         DialogInfo.createDialog(activity)
                 .setTitle("Chyba")
-                .setMessage("Nepodařilo se zpravovat požadavek v nastaveném časovém limitu")
+                .setMessage("Nepodařilo se zpraovat požadavek v nastaveném časovém limitu")
                 .show();
     }
 

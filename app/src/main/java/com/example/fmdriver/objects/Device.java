@@ -15,8 +15,13 @@ public class Device implements Parcelable {
     private String date;
     private DeviceIdentification deviceIdentification;
 
-    private long dateMillis;
-    private boolean isCurrent;
+    private boolean serviceIsStarted;
+    private boolean gpsIsStarted;
+    private boolean serviceStatusUnknown;
+
+    private String dateOfLastServiceUpdate;   //Datum poslední změny stavu služby z FmDriver
+    private long dateMillis;                //Datum registrace
+    private boolean isCurrent;              //Je aktuálně zobrayeno
 
 
     public Device() {}
@@ -36,6 +41,31 @@ public class Device implements Parcelable {
         this.date = date;
         this.deviceIdentification = deviceIdentification;
     }
+
+    //gettery a settery navíc pro získání (uložení) hodnoty z(do) DeviceIdentification;
+    //------------------------------------------------------------------
+    public String getAndroidId() {
+        if (this.deviceIdentification == null) return "";
+        if (this.deviceIdentification.getAndroidId() == null) return "";
+        return this.deviceIdentification.getAndroidId();
+    }
+
+    public String getDeviceId() {
+        if (this.deviceIdentification == null) return "";
+        if (this.deviceIdentification.getDeviceId() == null) return "";
+        return this.deviceIdentification.getDeviceId();
+    }
+
+    public void setAndroidId(String androidId) {
+        if (this.deviceIdentification == null) this.deviceIdentification = new DeviceIdentification();
+        this.deviceIdentification.setAndroidId(androidId);
+    }
+
+    public void setDeviceId(String deviceId) {
+        if (this.deviceIdentification == null) this.deviceIdentification = new DeviceIdentification();
+        this.deviceIdentification.setDeviceId(deviceId);
+    }
+    //------------------------------------------------------------------
 
     private long parseStringDate(String date) {
         SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
@@ -97,6 +127,38 @@ public class Device implements Parcelable {
         this.deviceIdentification = deviceIdentification;
     }
 
+    public boolean isServiceIsStarted() {
+        return serviceIsStarted;
+    }
+
+    public void setServiceIsStarted(boolean serviceIsStarted) {
+        this.serviceIsStarted = serviceIsStarted;
+    }
+
+    public boolean isGpsIsStarted() {
+        return gpsIsStarted;
+    }
+
+    public void setGpsIsStarted(boolean gpsIsStarted) {
+        this.gpsIsStarted = gpsIsStarted;
+    }
+
+    public boolean isServiceStatusUnknown() {
+        return serviceStatusUnknown;
+    }
+
+    public void setServiceStatusUnknown(boolean serviceStatusUnknown) {
+        this.serviceStatusUnknown = serviceStatusUnknown;
+    }
+
+    public String getDateOfLastServiceUpdate() {
+        return dateOfLastServiceUpdate;
+    }
+
+    public void setDateOfLastServiceUpdate(String dateOfLastServiceUpdate) {
+        this.dateOfLastServiceUpdate = dateOfLastServiceUpdate;
+    }
+
     public long getDateMillis() {
         return dateMillis;
     }
@@ -126,6 +188,10 @@ public class Device implements Parcelable {
         dest.writeString(this.token);
         dest.writeString(this.date);
         dest.writeParcelable(this.deviceIdentification, flags);
+        dest.writeByte(this.serviceIsStarted ? (byte) 1 : (byte) 0);
+        dest.writeByte(this.gpsIsStarted ? (byte) 1 : (byte) 0);
+        dest.writeByte(this.serviceStatusUnknown ? (byte) 1 : (byte) 0);
+        dest.writeString(this.dateOfLastServiceUpdate);
         dest.writeLong(this.dateMillis);
         dest.writeByte(this.isCurrent ? (byte) 1 : (byte) 0);
     }
@@ -137,6 +203,10 @@ public class Device implements Parcelable {
         this.token = in.readString();
         this.date = in.readString();
         this.deviceIdentification = in.readParcelable(DeviceIdentification.class.getClassLoader());
+        this.serviceIsStarted = in.readByte() != 0;
+        this.gpsIsStarted = in.readByte() != 0;
+        this.serviceStatusUnknown = in.readByte() != 0;
+        this.dateOfLastServiceUpdate = in.readString();
         this.dateMillis = in.readLong();
         this.isCurrent = in.readByte() != 0;
     }

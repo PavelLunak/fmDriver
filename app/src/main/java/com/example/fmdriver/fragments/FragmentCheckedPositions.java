@@ -16,6 +16,7 @@ import com.example.fmdriver.MainActivity;
 import com.example.fmdriver.R;
 import com.example.fmdriver.adapters.AdapterCheckedPositions;
 import com.example.fmdriver.customViews.DialogYesNo;
+import com.example.fmdriver.listeners.OnAllCheckedPositionsLoadedListener;
 import com.example.fmdriver.listeners.OnAllItemsDeletedListener;
 import com.example.fmdriver.listeners.OnYesNoDialogSelectedListener;
 import com.example.fmdriver.objects.PositionChecked;
@@ -29,13 +30,10 @@ public class FragmentCheckedPositions extends Fragment implements AppConstants {
 
     RecyclerView recyclerView;
     TextView labelPagesCount;
-    ImageView imgArrowLeft, imgArrowRight, imgSortByDate, imgSortByLine, imgDeleteAllItems;
+    ImageView imgArrowLeft, imgArrowRight, imgDeleteAllItems;
 
     MainActivity activity;
     AdapterCheckedPositions adapter;
-
-    Bundle args;
-    ArrayList<PositionChecked> items;
 
     @Override
     public void onAttach(Context context) {
@@ -49,8 +47,6 @@ public class FragmentCheckedPositions extends Fragment implements AppConstants {
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_checked_positions, container, false);
-        args = getArguments();
-        if (args != null) items = args.getParcelableArrayList("itemsCheckedPositions");
 
         recyclerView = (RecyclerView) rootView.findViewById(R.id.recyclerView);
         labelPagesCount = (TextView) rootView.findViewById(R.id.labelPagesCount);
@@ -61,14 +57,28 @@ public class FragmentCheckedPositions extends Fragment implements AppConstants {
         imgArrowLeft.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                activity.actualPage --;
 
+                activity.getAllCheckedPositions(new OnAllCheckedPositionsLoadedListener() {
+                    @Override
+                    public void onAllCheckedPositionsLoaded(ArrayList<PositionChecked> itemsCheckedPositions) {
+                        setViews();
+                    }
+                });
             }
         });
 
         imgArrowRight.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                activity.actualPage ++;
 
+                activity.getAllCheckedPositions(new OnAllCheckedPositionsLoadedListener() {
+                    @Override
+                    public void onAllCheckedPositionsLoaded(ArrayList<PositionChecked> itemsCheckedPositions) {
+                        setViews();
+                    }
+                });
             }
         });
 
@@ -86,7 +96,7 @@ public class FragmentCheckedPositions extends Fragment implements AppConstants {
                                 activity.deleteAllItems(new OnAllItemsDeletedListener() {
                                     @Override
                                     public void onAllItemsDeletedListener() {
-                                        items.clear();
+                                        MainActivity.itemsCheckedPositions.clear();
                                         adapter.notifyDataSetChanged();
                                     }
                                 });
@@ -108,26 +118,33 @@ public class FragmentCheckedPositions extends Fragment implements AppConstants {
     }
 
     private void setViews() {
-        updateFragment(null);
+        updateFragment();
+        updatePages(activity.itemsTotalCount, activity.pagesCount);
     }
 
-    public void updateFragment(ArrayList<PositionChecked> items) {
-        if (items != null) {
-            this.items = new ArrayList<>(items);
-        }
-
-        if (adapter != null) {
-            adapter.notifyDataSetChanged();
-        } else {
-            updateAdapter();
-        }
+    public void updateFragment() {
+        updateAdapter();
     }
 
     public void updateAdapter() {
-        if (items != null) {
-            adapter = new AdapterCheckedPositions(activity, items);
+        if (MainActivity.itemsCheckedPositions != null) {
+            adapter = new AdapterCheckedPositions(activity, MainActivity.itemsCheckedPositions);
             recyclerView.setAdapter(adapter);
             recyclerView.setLayoutManager(new LinearLayoutManager(activity));
+        }
+    }
+
+    public void updatePages(int itemsCount, int itemsPerPage) {
+        labelPagesCount.setText("" + (activity.actualPage + 1) + "/" + activity.pagesCount);
+
+        if (activity.actualPage == 0) {
+            imgArrowLeft.setVisibility(View.GONE);
+            if (activity.pagesCount > 1) imgArrowRight.setVisibility(View.VISIBLE);
+            else imgArrowRight.setVisibility(View.GONE);
+        } else {
+            imgArrowLeft.setVisibility(View.VISIBLE);
+            if ((activity.actualPage + 1) < activity.pagesCount) imgArrowRight.setVisibility(View.VISIBLE);
+            else imgArrowRight.setVisibility(View.GONE);
         }
     }
 }
