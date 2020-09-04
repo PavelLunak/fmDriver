@@ -48,7 +48,7 @@
         android:layout_marginRight="5dp"
         android:layout_toStartOf="@id/labelGpsStatus"
         android:layout_toLeftOf="@id/labelGpsStatus"
-        android:text="?"
+        android:text="Neznámý stav"
         android:textColor="@color/colorDeviceItemStatusStoped"
         android:textStyle="bold" />
 

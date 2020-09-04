@@ -3,21 +3,18 @@ package com.example.fmdriver.firebase;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.media.RingtoneManager;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.NotificationManagerCompat;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.example.fmdriver.MainActivity;
 import com.example.fmdriver.R;
 import com.example.fmdriver.objects.DeviceIdentification;
 import com.example.fmdriver.utils.AppConstants;
 import com.example.fmdriver.utils.AppUtils;
-import com.example.fmdriver.utils.DateTimeUtils;
 import com.example.fmdriver.utils.PrefsUtils;
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationCallback;
-import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
@@ -25,7 +22,6 @@ import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Map;
 
 
